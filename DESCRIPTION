@@ -14,3 +14,5 @@ Imports:
     dplyr,
     rlang,
     sparklyr
+URL: https://github.com/hugo-morvan/bigMice
+BugReports: https://github.com/hugo-morvan/bigMice/issues
