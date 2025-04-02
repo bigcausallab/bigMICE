@@ -34,11 +34,3 @@ Make sure they are installed:
 ```r
 install.packages(c("dplyr", "sparklyr"))
 ```
-
-
-Feel free to contribute to the project by submitting issues or pull requests on [GitHub](https://github.com/hugo-morvan/bigMice).
-
-## License
-
-This package is licensed under the MIT License.
-
