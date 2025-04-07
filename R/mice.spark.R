@@ -280,7 +280,7 @@ sampler.spark <- function(sc,
       if(!is.null(predictorMatrix)){
         print("Applying User defined predictor matrix")
         #Fetch the user-defined predictors for the label var_j
-        UD_predictors <- predictorMatrix[which(predictorMatrix[,1] == label_col),2]
+        UD_predictors <- colnames(predictorMatrix)[predictorMatrix[label_col, ]]
         print("User defined predictors")
         print(UD_predictors)
         #Check if the predictors are in the data
