@@ -1,6 +1,8 @@
 #' Linear Regression Imputation function
 #'
 #' This function imputes missing values in a Spark DataFrame using logistic regression. This function is intended for boolean variables only (0/1).
+#' @importFrom dplyr %>%
+#' @importFrom data.table :=
 #'
 #' @param sc A Spark connection
 #' @param sdf A Spark DataFrame

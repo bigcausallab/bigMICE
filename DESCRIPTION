@@ -13,6 +13,7 @@ RoxygenNote: 7.3.2
 Imports: 
     dplyr,
     rlang,
-    sparklyr
+    sparklyr,
+    data.table
 URL: https://github.com/hugo-morvan/bigMice
 BugReports: https://github.com/hugo-morvan/bigMice/issues

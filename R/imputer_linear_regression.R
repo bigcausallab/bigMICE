@@ -1,6 +1,8 @@
 #' Linear Regression Imputation function
 #'
 #' This function imputes missing values in a Spark DataFrame using linear regression.
+#' @importFrom dplyr %>%
+#' @importFrom data.table :=
 #'
 #' @param sc A Spark connection
 #' @param sdf A Spark DataFrame
@@ -39,7 +41,7 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
 
   # Step 3: Build regression formula
   formula_str <- paste0(target_col, " ~ ", paste(feature_cols, collapse = " + "))
-  formula_obj <- as.formula(formula_str)
+  formula_obj <- stats::as.formula(formula_str)
 
   # Step 4: Build linear regression model on complete data
   lm_model <- complete_data %>%

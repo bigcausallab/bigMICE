@@ -4,7 +4,15 @@
 \alias{sampler.spark}
 \title{MICE sampler function}
 \usage{
-sampler.spark(sc, data, imp_init, fromto, var_types, printFlag)
+sampler.spark(
+  sc,
+  data,
+  imp_init,
+  fromto,
+  var_types,
+  predictorMatrix,
+  printFlag
+)
 }
 \arguments{
 \item{sc}{A Spark connection}
@@ -16,6 +24,8 @@ sampler.spark(sc, data, imp_init, fromto, var_types, printFlag)
 \item{fromto}{A vector of length 2, the range of iterations to perform (from, to)}
 
 \item{var_types}{A named character vector, the variable types of the columns in the data.}
+
+\item{predictorMatrix}{A matrix, the predictor matrix to use for the imputation. TBD}
 
 \item{printFlag}{A boolean, whether to print debug information.}
 }

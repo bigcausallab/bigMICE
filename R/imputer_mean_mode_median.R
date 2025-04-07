@@ -1,6 +1,8 @@
 #' Mean/Mode/Median Imputation function
 #'
 #' This function imputes missing values in a Spark DataFrame using the mean, mode, or median of the observed values.
+#' @importFrom dplyr %>%
+#'
 #'
 #' @param sc A Spark connection
 #' @param sdf A Spark DataFrame
@@ -72,12 +74,12 @@ impute_with_MeMoMe  <- function(sc, sdf, column = NULL, impute_mode) {
       dplyr::filter(is.na(!!rlang::sym(col)))
 
     # If no missing values or no observed values, skip this column
-    if (sdf_nrow(incomplete_data) == 0) {
+    if (sparklyr::sdf_nrow(incomplete_data) == 0) {
       cat(" No missing values found. Skipping.")
       next
     }
 
-    if (sdf_nrow(complete_data) == 0) {
+    if (sparklyr::sdf_nrow(complete_data) == 0) {
       cat(" No observed values found. Skipping.")
       next
     }
@@ -94,7 +96,7 @@ impute_with_MeMoMe  <- function(sc, sdf, column = NULL, impute_mode) {
     } else if (mode == "median") {
       cat("Imputing with median")
       value <- complete_data %>%
-        dplyr::summarize(impute_val = median(!!rlang::sym(col), na.rm = TRUE)) %>%
+        dplyr::summarize(impute_val = stats::median(!!rlang::sym(col), na.rm = TRUE)) %>%
         dplyr::collect() %>%
         dplyr::pull(impute_val)
       cat(" - Median value:", value)
@@ -103,10 +105,10 @@ impute_with_MeMoMe  <- function(sc, sdf, column = NULL, impute_mode) {
       cat("Imputing with mode")
       value <- complete_data %>%
         dplyr::group_by(!!rlang::sym(col)) %>%
-        dplyr::summarize(count = n()) %>%
-        dplyr::arrange(desc(count)) %>%
+        dplyr::summarize(count = dplyr::n()) %>%
+        dplyr::arrange(dplyr::desc(count)) %>%
         dplyr::collect() %>%
-        head(1) %>%
+        utils::head(1) %>%
         dplyr::pull(!!rlang::sym(col))
       cat(" - Mode value:", as.character(value))
       value
@@ -114,7 +116,7 @@ impute_with_MeMoMe  <- function(sc, sdf, column = NULL, impute_mode) {
 
     # Create imputed dataframe
     imputed_df <- result %>%
-      dplyr::mutate(!!rlang::sym(col) := if_else(is.na(!!rlang::sym(col)), impute_value, !!rlang::sym(col)))
+      dplyr::mutate(!!rlang::sym(col) := dplyr::if_else(is.na(!!rlang::sym(col)), impute_value, !!rlang::sym(col)))
 
     # Update result with imputed dataframe
     result <- imputed_df

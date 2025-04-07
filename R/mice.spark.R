@@ -2,6 +2,9 @@
 #'
 #' This function imputes missing values in a Spark DataFrame using MICE (Multiple Imputation by Chained Equations) algorithm.
 #'
+#' @importFrom dplyr %>%
+#'
+#'
 #' @param sc A Spark connection
 #' @param data A Spark DataFrame
 #' @param variable_types A named character vector, the variable types of the columns in the data.
@@ -43,7 +46,6 @@ mice.spark <- function(data,
   #data <- check.spark.dataform(data)
   cols <- names(variable_types)
   #m <- check.m(m)
-
 
   from <- 1
   to <- from + maxit - 1
@@ -122,6 +124,7 @@ mice.spark <- function(data,
                          imp_init = imp_init,
                          fromto = c(from, to),
                          var_types = variable_types,
+                         predictorMatrix = predictorMatrix,
                          printFlag = printFlag)
 
     imp_end_time <- proc.time()
@@ -136,7 +139,7 @@ mice.spark <- function(data,
     # Fit model on imputed data
     cat("Fitting model on imputed data\n")
     model <- imp %>%
-      ml_logistic_regression(formula = formula_obj)
+      sparklyr::ml_logistic_regression(formula = formula_obj)
 
     # Store model coefficients
     model_params[[i]] <- model$coefficients
@@ -218,6 +221,7 @@ mice.spark <- function(data,
 #' @param fromto A vector of length 2, the range of iterations to perform (from, to)
 #' @param var_types A named character vector, the variable types of the columns in the data.
 #' @param printFlag A boolean, whether to print debug information.
+#' @param predictorMatrix A matrix, the predictor matrix to use for the imputation. TBD
 #' @return The Spark DataFrame with missing values imputed for all variables
 #' @export
 #' @examples
@@ -227,6 +231,7 @@ sampler.spark <- function(sc,
                           imp_init,
                           fromto,
                           var_types,
+                          predictorMatrix,
                           printFlag){
 
 
@@ -267,16 +272,30 @@ sampler.spark <- function(sc,
       # Obtain the variables use to predict the missing values of variable j and create feature column
       label_col <- var_j
 
+      # DEFAULT: all other variables
       feature_cols <- setdiff(var_names, label_col)
+      # If predictorMatrix is provided, use it to select the features
+      if(!is.null(predictorMatrix)){
+        #Fetch the user-defined predictors for the label var_j
+        UD_predictors <- predictorMatrix[which(predictorMatrix[,1] == label_col),2]
+        #Check if the predictors are in the data
+        if(length(UD_predictors) > 0){
+          #If they are, use them as features
+          feature_cols <- intersect(feature_cols, UD_predictors)
+        }else{
+          #If not, use stop
+          stop(paste("The user-defined predictors for variable", label_col, "are not in the data."))
+        }
+      }
       #print(feature_cols)
-      #Filter out Date data type
+      #Filter out Date data type (unsupported)
       feature_cols <- feature_cols[sapply(var_types[feature_cols],
                                           function(x) !(x %in% c("String", "smalldatetime")))]
 
       # Replace initialized values in label column with the original missing values
       j_df <- imp_init %>%
         sparklyr::select(-label_col) %>%
-        cbind(data %>% sparklyr::select(all_of(label_col)))
+        cbind(data %>% sparklyr::select(dplyr::all_of(label_col)))
 
 
       method <- imp_methods[[var_j]]
@@ -294,8 +313,8 @@ sampler.spark <- function(sc,
       #print(result)
       # To avoid stackoverflow error, I try to break/collect? the lineage after each imputation
       # Might not be necessary at every iteration. only run into error after ~25 imputation
-      result %>% sdf_persist()
-      # But this does not seems to work. Still run into stack_overflow error
+      result %>% sparklyr::sdf_persist()
+      # But this does not seems to work. Still run into stack_overflow error when not enough memory in sc
     } #end of var_j loop (each variable)
 
   } #end of k loop (iterations)

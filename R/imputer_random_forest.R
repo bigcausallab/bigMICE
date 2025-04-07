@@ -1,6 +1,7 @@
 #' Random Forest Regression Imputation function
 #'
 #' This function imputes missing values in a Spark DataFrame using Random Forest regression.
+#' @importFrom dplyr %>%
 #'
 #' @param sc A Spark connection
 #' @param sdf A Spark DataFrame
@@ -100,14 +101,14 @@ impute_with_random_forest_classifier <- function(sc, sdf, target_col, feature_co
 
   # Step 3: Build regression formula
   formula_str <- paste0(target_col, " ~ ", paste(feature_cols, collapse = " + "))
-  formula_obj <- as.formula(formula_str)
+  formula_obj <- stats::as.formula(formula_str)
 
   # Step 4: Build logistic regression model on complete data
   model <- complete_data %>%
-    ml_random_forest_classifier(formula = formula_obj)
+    sparklyr::ml_random_forest_classifier(formula = formula_obj)
 
   # Step 5: Predict missing values
-  predictions <- ml_predict(model, incomplete_data)
+  predictions <- sparklyr::ml_predict(model, incomplete_data)
 
   #print(predictions %>% select(prediction))
 

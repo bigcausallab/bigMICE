@@ -37,7 +37,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
 
   # Step 3: Build regression formula
   formula_str <- paste0(target_col, " ~ ", paste(feature_cols, collapse = " + "))
-  formula_obj <- as.formula(formula_str)
+  formula_obj <- stats::as.formula(formula_str)
 
   # Step 4: Build logistic regression model on complete data
   model <- complete_data %>%
