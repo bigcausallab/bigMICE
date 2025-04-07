@@ -281,10 +281,15 @@ sampler.spark <- function(sc,
         print("Applying User defined predictor matrix")
         #Fetch the user-defined predictors for the label var_j
         UD_predictors <- predictorMatrix[which(predictorMatrix[,1] == label_col),2]
+        print("User defined predictors")
+        print(UD_predictors)
         #Check if the predictors are in the data
         if(length(UD_predictors) > 0){
           #If they are, use them as features
           feature_cols <- intersect(feature_cols, UD_predictors)
+          #Print the features used for debug
+          print(paste("Using user-defined predictors for variable", label_col, ":", paste(feature_cols, collapse = ", ")))
+
         }else{
           #If not, use stop
           stop(paste("The user-defined predictors for variable", label_col, "are not in the data."))
