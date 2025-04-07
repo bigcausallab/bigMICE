@@ -274,8 +274,11 @@ sampler.spark <- function(sc,
 
       # DEFAULT: all other variables
       feature_cols <- setdiff(var_names, label_col)
+      #remove the features with "none" imputation method (lpopNr, Unit_code, etc... )
+      feature_cols <- feature_cols[which(imp_methods[feature_cols] != "none")]
       # If predictorMatrix is provided, use it to select the features
       if(!is.null(predictorMatrix)){
+        print("Applying User defined predictor matrix")
         #Fetch the user-defined predictors for the label var_j
         UD_predictors <- predictorMatrix[which(predictorMatrix[,1] == label_col),2]
         #Check if the predictors are in the data
@@ -286,6 +289,9 @@ sampler.spark <- function(sc,
           #If not, use stop
           stop(paste("The user-defined predictors for variable", label_col, "are not in the data."))
         }
+      }else{
+        #If not, use the default predictors
+        print("Using default predictors")
       }
       #print(feature_cols)
       #Filter out Date data type (unsupported)
