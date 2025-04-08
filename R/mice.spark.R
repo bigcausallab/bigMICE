@@ -39,7 +39,7 @@ mice.spark <- function(data,
                        imp_init = NULL,
                        ...) {
 
-  cat("\nUsing bigMICE version 0.1.1 \n")
+  cat("\nUsing bigMICE version 0.1.2 \n")
   if (!is.na(seed)) set.seed(seed)
 
   # check form of data and m
