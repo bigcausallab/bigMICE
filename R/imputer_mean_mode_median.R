@@ -13,7 +13,7 @@
 #' @examples
 #' #TBD
 
-impute_with_MeMoMe  <- function(sc, sdf, column = NULL, impute_mode) {
+impute_with_MeMoMe  <- function(sc, sdf, column = NULL, impute_mode, printFlags = TRUE) {
   # Validate impute_mode is provided
   if (missing(impute_mode)) {
     stop("impute_mode is a mandatory argument and must be specified for each column")
@@ -51,8 +51,10 @@ impute_with_MeMoMe  <- function(sc, sdf, column = NULL, impute_mode) {
   for (i in seq_along(cols_to_process)) {
     col <- cols_to_process[i]
     mode <- impute_mode[i]
-
-    cat("\n",i,"/",num_cols,":", col, "- ")
+    # Print progress
+    if (printFlags) {
+      cat("\n",i,"/",num_cols,":", col, "- ")
+    }
 
     # Skip columns that don't exist
     if (!(col %in% colnames(result))) {
@@ -62,7 +64,9 @@ impute_with_MeMoMe  <- function(sc, sdf, column = NULL, impute_mode) {
 
     # If mode is "none", skip to next column
     if (mode == "none") {
-      cat(" Skipping imputation as specified.")
+      if (printFlags) {
+        cat(" Skipping imputation as specified.")
+      }
       next
     }
 
@@ -75,34 +79,48 @@ impute_with_MeMoMe  <- function(sc, sdf, column = NULL, impute_mode) {
 
     # If no missing values or no observed values, skip this column
     if (sparklyr::sdf_nrow(incomplete_data) == 0) {
-      cat(" No missing values found. Skipping.")
+      if (printFlags) {
+        cat(" No missing values found. Skipping.")
+      }
       next
     }
 
     if (sparklyr::sdf_nrow(complete_data) == 0) {
-      cat(" No observed values found. Skipping.")
+      if (printFlags) {
+        cat(" No observed values found. Skipping.")
+      }
       next
     }
 
     # Calculate imputation value based on mode
     impute_value <- if (mode == "mean") {
-      cat("Imputing with mean")
+      if (printFlags) {
+        cat("Imputing with mean")
+      }
       value <- complete_data %>%
         dplyr::summarize(impute_val = mean(!!rlang::sym(col), na.rm = TRUE)) %>%
         dplyr::collect() %>%
         dplyr::pull(impute_val)
-      cat(" - Mean value:", value)
+      if (printFlags) {
+        cat(" - Mean value:", value)
+      }
       value
     } else if (mode == "median") {
-      cat("Imputing with median")
+      if (printFlags) {
+        cat("Imputing with median")
+      }
       value <- complete_data %>%
         dplyr::summarize(impute_val = stats::median(!!rlang::sym(col), na.rm = TRUE)) %>%
         dplyr::collect() %>%
         dplyr::pull(impute_val)
-      cat(" - Median value:", value)
+      if (printFlags) {
+        cat(" - Median value:", value)
+      }
       value
     } else if (mode == "mode") {
-      cat("Imputing with mode")
+      if (printFlags) {
+        cat("Imputing with mode")
+      }
       value <- complete_data %>%
         dplyr::group_by(!!rlang::sym(col)) %>%
         dplyr::summarize(count = dplyr::n()) %>%
@@ -110,7 +128,9 @@ impute_with_MeMoMe  <- function(sc, sdf, column = NULL, impute_mode) {
         dplyr::collect() %>%
         utils::head(1) %>%
         dplyr::pull(!!rlang::sym(col))
-      cat(" - Mode value:", as.character(value))
+      if (printFlags) {
+        cat(" - Mode value:", value)
+      }
       value
     }
 

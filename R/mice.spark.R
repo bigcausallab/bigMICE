@@ -39,7 +39,7 @@ mice.spark <- function(data,
                        imp_init = NULL,
                        ...) {
 
-  cat("\nUsing bigMICE version 0.1.2 \n")
+  cat("\nUsing bigMICE version 0.1.3 \n")
   if (!is.na(seed)) set.seed(seed)
 
   # check form of data and m
@@ -281,14 +281,14 @@ sampler.spark <- function(sc,
         print("Applying User defined predictor matrix")
         #Fetch the user-defined predictors for the label var_j
         UD_predictors <- colnames(predictorMatrix)[predictorMatrix[label_col, ]]
-        print("User defined predictors")
-        print(UD_predictors)
+        #print("User defined predictors")
+        #print(UD_predictors)
         #Check if the predictors are in the data
         if(length(UD_predictors) > 0){
           #If they are, use them as features
           feature_cols <- intersect(feature_cols, UD_predictors)
           #Print the features used for debug
-          print(paste("Using user-defined predictors for variable", label_col, ":", paste(feature_cols, collapse = ", ")))
+          #print(paste("Using user-defined predictors for variable", label_col, ":", paste(feature_cols, collapse = ", ")))
 
         }else{
           #If not, use stop
