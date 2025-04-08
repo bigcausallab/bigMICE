@@ -292,7 +292,8 @@ sampler.spark <- function(sc,
 
         }else{
           #If not, use stop
-          stop(paste("The user-defined predictors for variable", label_col, "are not in the data."))
+          cat(paste("The user-defined predictors for variable", label_col, "are not in the data or no predictors left after using user-defined predictors. Skipping Imputation for this variable.\n"))
+          next
         }
       }else{
         #If not, use the default predictors
