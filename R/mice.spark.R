@@ -39,7 +39,7 @@ mice.spark <- function(data,
                        imp_init = NULL,
                        ...) {
 
-  cat("\nUsing bigMICE version 0.1.3 \n")
+  cat("\nUsing bigMICE version 0.1.4 \n")
   if (!is.na(seed)) set.seed(seed)
 
   # check form of data and m
@@ -112,7 +112,7 @@ mice.spark <- function(data,
 
   # FOR EACH IMPUTATION SET i = 1, ..., m
   for (i in 1:m) {
-    cat("Iteration: ", i, "\n")
+    cat("\nImputation: ", i, "\n")
 
     # Run the imputation algorithm
     cat("Starting imputation")
