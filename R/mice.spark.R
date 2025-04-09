@@ -44,14 +44,14 @@ mice.spark <- function(data,
 
   # check form of data and m
   #data <- check.spark.dataform(data)
-  cols <- names(variable_types)
+
   #m <- check.m(m)
 
   from <- 1
   to <- from + maxit - 1
 
   # INITIALISE THE IMPUTATION USING Mean/Mode/Median SAMPLING
-
+  cols <- names(variable_types)
   # Do this inside or outside the m loop ?
   # Do I want each imputation to start from the same sample or have more variation in initial condition ?
 
@@ -231,7 +231,7 @@ sampler.spark <- function(sc,
                           imp_init,
                           fromto,
                           var_types,
-                          predictorMatrix,
+                          predictorMatrix = NULL,
                           printFlag){
 
 
@@ -278,7 +278,7 @@ sampler.spark <- function(sc,
       feature_cols <- feature_cols[which(imp_methods[feature_cols] != "none")]
       # If predictorMatrix is provided, use it to select the features
       if(!is.null(predictorMatrix)){
-        print("Applying User defined predictor matrix")
+        #print("Applying User defined predictor matrix")
         #Fetch the user-defined predictors for the label var_j
         UD_predictors <- colnames(predictorMatrix)[predictorMatrix[label_col, ]]
         #print("User defined predictors")
@@ -297,7 +297,7 @@ sampler.spark <- function(sc,
         }
       }else{
         #If not, use the default predictors
-        print("Using default predictors")
+        #print("Using default predictors")
       }
       #print(feature_cols)
       #Filter out Date data type (unsupported)
