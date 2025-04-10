@@ -138,6 +138,7 @@ mice.spark <- function(data,
     # ##### Calculate Rubin Rules statistics ############
     # Fit model on imputed data
     cat("Fitting model on imputed data\n")
+    print(colnames(imp))
     model <- imp %>%
       sparklyr::ml_logistic_regression(formula = formula_obj)
 
