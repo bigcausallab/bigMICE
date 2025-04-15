@@ -4,7 +4,7 @@
 \alias{impute_with_MeMoMe}
 \title{Mean/Mode/Median Imputation function}
 \usage{
-impute_with_MeMoMe(sc, sdf, column = NULL, impute_mode)
+impute_with_MeMoMe(sc, sdf, column = NULL, impute_mode, printFlags = TRUE)
 }
 \arguments{
 \item{sc}{A Spark connection}
@@ -14,6 +14,8 @@ impute_with_MeMoMe(sc, sdf, column = NULL, impute_mode)
 \item{column}{The column(s) to impute. If NULL, all columns will be imputed}
 
 \item{impute_mode}{Which imputation method to use for each column. Options are "mean", "mode", "median", or "none"}
+
+\item{printFlags}{Wether or not to print the imputation process to the console. Default is TRUE.}
 }
 \value{
 The Spark DataFrame with missing values imputed

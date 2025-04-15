@@ -10,7 +10,7 @@ sampler.spark(
   imp_init,
   fromto,
   var_types,
-  predictorMatrix,
+  predictorMatrix = NULL,
   printFlag
 )
 }

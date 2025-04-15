@@ -8,6 +8,7 @@
 #' @param sdf A Spark DataFrame
 #' @param column The column(s) to impute. If NULL, all columns will be imputed
 #' @param impute_mode Which imputation method to use for each column. Options are "mean", "mode", "median", or "none"
+#' @param printFlags Wether or not to print the imputation process to the console. Default is TRUE.
 #' @return The Spark DataFrame with missing values imputed
 #' @export
 #' @examples
