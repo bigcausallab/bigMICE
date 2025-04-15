@@ -139,6 +139,12 @@ mice.spark <- function(data,
     # Fit model on imputed data
     cat("Fitting model on imputed data\n")
     print(colnames(imp))
+    # Clearing the extra columns created by the imputer (Bug)
+    pre_pred_cols <- c(colnames(data))
+    post_pred_cols <- colnames(imp)
+    extra_cols <- setdiff(post_pred_cols, pre_pred_cols)
+    imp <- imp %>% dplyr::select(-dplyr::all_of(extra_cols))
+    print(colnames(imp))
     model <- imp %>%
       sparklyr::ml_logistic_regression(formula = formula_obj)
 
