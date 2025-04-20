@@ -498,7 +498,7 @@ mice.spark.plus <- function(data, #data + 10% missing
     print(colnames(imp))
 
     # ##### Obtain known missings sparse matrix ###########
-    cat("Obtaining known missings sparse matrix\n")
+    cat("Obtaining known missings sparse matrixTTTT\n")
 
     # Collect the imo result:
     imp_collect <- imp %>% collect()
