@@ -487,7 +487,7 @@ mice.spark.plus <- function(data, #data + 10% missing
     # ##### Calculate Rubin Rules statistics ############
     # Fit model on imputed data
     cat("Fitting model on imputed data\n")
-    print(colnames(imp))
+    #print(colnames(imp))
     # Clearing the extra columns created by the imputer (Bug, needs to be fixed)
     # Need to look at each imputer to see which one returns the extra cols
     # Or does the model created also create new cols in the data ?
@@ -495,7 +495,7 @@ mice.spark.plus <- function(data, #data + 10% missing
     post_pred_cols <- colnames(imp)
     extra_cols <- setdiff(post_pred_cols, pre_pred_cols)
     imp <- imp %>% dplyr::select(-dplyr::all_of(extra_cols))
-    print(colnames(imp))
+    #print(colnames(imp))
 
     # ##### Obtain known missings sparse matrix ###########
     cat("Obtaining known missings sparse matrixTTTT\n")
@@ -503,7 +503,7 @@ mice.spark.plus <- function(data, #data + 10% missing
     # Collect the imo result:
     imp_collect <- imp %>% collect()
     known_missings_m <- imp_collect[where_missing]
-    print(known_missings_m)
+    #print(known_missings_m)
 
     # Sparse location = is.na(data) & !is.na(data_true)
     # where_sparse <- data %>% sparklyr::select( dplyr::all_of(colnames(data))) %>%
@@ -521,7 +521,7 @@ mice.spark.plus <- function(data, #data + 10% missing
     #   dplyr::filter(known == TRUE) %>%
     #   dplyr::select(-known)
 
-    print(known_missings_m)
+    #print(known_missings_m)
 
     known_missings[[i]] <- known_missings_m
 
