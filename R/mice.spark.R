@@ -502,7 +502,7 @@ mice.spark.plus <- function(data, #data + 10% missing
 
     # Collect the imo result:
     imp_collect <- imp %>% collect()
-    known_missings_m <- imp_collect[[where_missing]]
+    known_missings_m <- imp_collect[where_missing]
     print(known_missings_m)
 
     # Sparse location = is.na(data) & !is.na(data_true)
