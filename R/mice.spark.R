@@ -370,8 +370,8 @@ sampler.spark <- function(sc,
 #' @examples
 #' #TBD
 
-mice.spark.plus <- function(data,
-                       data_true,
+mice.spark.plus <- function(data, #data + 10% missing
+                       data_true, #data without missing
                        sc,
                        variable_types, # Used for initialization and method selection
                        analysis_formula,
@@ -500,14 +500,14 @@ mice.spark.plus <- function(data,
     cat("Obtaining known missings sparse matrix\n")
     # Sparse location = is.na(data) & !is.na(data_true)
     where_sparse <- data %>% sparklyr::select( dplyr::all_of(colnames(data))) %>%
-      sparklyr::sdf_mutate(known = is.na(data) & !is.na(data_true)) %>%
+      sparklyr::mutate(known = is.na(data) & !is.na(data_true)) %>%
       sparklyr::select(dplyr::all_of(colnames(data)), known)
     print(where_sparse)
 
     # Extract the known missing from imp using where_sparse
     known_missings_m <- imp %>%
-      sparklyr::sdf_join(where_sparse, by = colnames(data)) %>%
-      sparklyr::sdf_select(dplyr::all_of(colnames(data)), known) %>%
+      sparklyr::inner_join(where_sparse, by = colnames(data)) %>%
+      sparklyr::select(dplyr::all_of(colnames(data)), known) %>%
       dplyr::filter(known == TRUE) %>%
       dplyr::select(-known)
 
@@ -515,7 +515,7 @@ mice.spark.plus <- function(data,
 
     #Collect and convert to a matrix, then a sparse matrix, then save the result to return
     known_missings_m_collected <- known_missings_m %>%
-      sparklyr::sdf_collect() %>%
+      sparklyr::collect() %>%
       as.matrix() %>%
       Matrix::Matrix(sparse = TRUE)
 
