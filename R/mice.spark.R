@@ -375,6 +375,7 @@ mice.spark.plus <- function(data, #data + 10% missing
                        sc,
                        variable_types, # Used for initialization and method selection
                        analysis_formula,
+                       where_missing,
                        m = 5,
                        method = NULL,
                        predictorMatrix = NULL,
@@ -498,31 +499,35 @@ mice.spark.plus <- function(data, #data + 10% missing
 
     # ##### Obtain known missings sparse matrix ###########
     cat("Obtaining known missings sparse matrix\n")
+
+    # Collect the imo result:
+    imp_collect <- imp %>% collect()
+    known_missings_m <- imp_collect[[where_missing]]
+    print(known_missings_m)
+
     # Sparse location = is.na(data) & !is.na(data_true)
-    where_sparse <- data %>% sparklyr::select( dplyr::all_of(colnames(data))) %>%
-      sparklyr::mutate(known = is.na(data) & !is.na(data_true)) %>%
-      sparklyr::select(dplyr::all_of(colnames(data)), known)
-    print(where_sparse)
+    # where_sparse <- data %>% sparklyr::select( dplyr::all_of(colnames(data))) %>%
+    #   sparklyr::mutate(known = is.na(data) & !is.na(data_true)) %>%
+    #   sparklyr::select(dplyr::all_of(colnames(data)), known)
+    #
+    # print("where_sparse")
+    # print(where_sparse)
+
 
     # Extract the known missing from imp using where_sparse
-    known_missings_m <- imp %>%
-      sparklyr::inner_join(where_sparse, by = colnames(data)) %>%
-      sparklyr::select(dplyr::all_of(colnames(data)), known) %>%
-      dplyr::filter(known == TRUE) %>%
-      dplyr::select(-known)
+    # known_missings_m <- imp %>%
+    #   sparklyr::inner_join(where_sparse, by = colnames(data)) %>%
+    #   sparklyr::select(dplyr::all_of(colnames(data)), known) %>%
+    #   dplyr::filter(known == TRUE) %>%
+    #   dplyr::select(-known)
 
     print(known_missings_m)
 
-    #Collect and convert to a matrix, then a sparse matrix, then save the result to return
-    known_missings_m_collected <- known_missings_m %>%
-      sparklyr::collect() %>%
-      as.matrix() %>%
-      Matrix::Matrix(sparse = TRUE)
+    known_missings[[i]] <- known_missings_m
 
-    print(known_missings_m_collected)
 
-    known_missings[[i]] <- known_missings_m_collected
 
+    #%%%% Analysis on the imputed data%%%%%
     model <- imp %>%
       sparklyr::ml_logistic_regression(formula = formula_obj)
 
