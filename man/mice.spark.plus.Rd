@@ -10,6 +10,7 @@ mice.spark.plus(
   sc,
   variable_types,
   analysis_formula,
+  where_missing,
   m = 5,
   method = NULL,
   predictorMatrix = NULL,
@@ -32,6 +33,8 @@ mice.spark.plus(
 \item{variable_types}{A named character vector, the variable types of the columns in the data.}
 
 \item{analysis_formula}{A formula, the formula to use for the analysis}
+
+\item{where_missing}{A logical vector, the locations of the missing values in the data}
 
 \item{m}{The number of imputations to perform}
 

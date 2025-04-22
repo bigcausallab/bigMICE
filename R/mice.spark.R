@@ -358,6 +358,7 @@ sampler.spark <- function(sc,
 #' @param data_true A Spark DataFrame, the original data without extra missing values
 #' @param variable_types A named character vector, the variable types of the columns in the data.
 #' @param analysis_formula A formula, the formula to use for the analysis
+#' @param where_missing A logical vector, the locations of the missing values in the data
 #' @param m The number of imputations to perform
 #' @param method A character vector, the imputation method to use for each variable. If NULL, the function will infer the method based on the variable types.
 #' @param predictorMatrix A matrix, the predictor matrix to use for the imputation. TBD

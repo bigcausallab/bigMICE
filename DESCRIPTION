@@ -1,7 +1,7 @@
 Package: bigMice
 Type: Package
 Title: Adaptation of R package mice for big data using Apache Spark
-Version: 0.1.1
+Version: 0.1.2
 Author: Hugo Morvan
 Maintainer: Hugo Morvan <hugmo418@student.liu.se>
 Description: Description to be added
