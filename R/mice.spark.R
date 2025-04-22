@@ -333,11 +333,14 @@ sampler.spark <- function(sc,
       #Use the result to do something to the original dataset
       #print(result)
       # To avoid stackoverflow error, I try to break/collect? the lineage after each imputation
-      # Might not be necessary at every iteration. only run into error after ~25 imputation
-      result %>% sparklyr::sdf_persist()
-      # But this does not seems to work. Still run into stack_overflow error when not enough memory in sc
-    } #end of var_j loop (each variable)
+      # Might not be necessary at every iteration. only run into error after ~25 imputations
+      #result %>% sparklyr::sdf_persist()
 
+      # But this does not seems to work. Still run into stack_overflow error when not enough memory in sc
+
+    } #end of var_j loop (each variable)
+    #
+    result %>% sparklyr::sdf_persist()
   } #end of k loop (iterations)
   # The sampler has finish his iterative work, can now return the imputed dataset ?
   return(result)
