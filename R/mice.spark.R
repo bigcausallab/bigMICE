@@ -340,7 +340,7 @@ sampler.spark <- function(sc,
 
     } #end of var_j loop (each variable)
     #
-    result %>% sparklyr::sdf_persist()
+    # result %>% sparklyr::sdf_persist()
   } #end of k loop (iterations)
   # The sampler has finish his iterative work, can now return the imputed dataset ?
   return(result)
@@ -391,7 +391,7 @@ mice.spark.plus <- function(data, #data + 10% missing
                        imp_init = NULL,
                        ...) {
 
-  cat("\nUsing bigMICE version 0.1.4 \n")
+  cat("\nUsing bigMICE version 0.1.6 \n")
   if (!is.na(seed)) set.seed(seed)
 
   # check form of data and m
