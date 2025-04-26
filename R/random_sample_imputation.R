@@ -69,7 +69,7 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
 
     sampled_values2 <- observed_data %>%
       dplyr::select(!!rlang::sym(col)) %>%
-      dplyr::slice(n = n_missing, replace = TRUE)
+      dplyr::slice_sample(n = n_missing, replace = TRUE)
 
     n_sampled2 <- sparklyr::sdf_nrow(sampled_values2)
     cat(" n_sampled2", n_sampled2)
