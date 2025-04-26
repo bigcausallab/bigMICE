@@ -70,7 +70,7 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
     sampled_values2 <- observed_data %>%
       dplyr::select(!!rlang::sym(col)) %>%
       sparklyr::sdf_sample(fraction = fraction_missing, replacement = TRUE) %>%
-      dplyr::head(n_missing) %>%
+      utils::head(n_missing) %>%
       sparklyr::sdf_with_sequential_id(id = "id")
 
     n_sampled2 <- sparklyr::sdf_nrow(sampled_values2)
