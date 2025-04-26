@@ -2,7 +2,7 @@
 % Please edit documentation in R/imputer_mult_logistic.R
 \name{impute_with_mult_logistic_regression}
 \alias{impute_with_mult_logistic_regression}
-\title{Multinomial Linear Regression Imputation function}
+\title{Multinomial Logistic Regression Imputation function}
 \usage{
 impute_with_mult_logistic_regression(sc, sdf, target_col, feature_cols)
 }

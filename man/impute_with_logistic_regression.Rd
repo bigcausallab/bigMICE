@@ -2,7 +2,7 @@
 % Please edit documentation in R/imputer_logistic_regression.R
 \name{impute_with_logistic_regression}
 \alias{impute_with_logistic_regression}
-\title{Linear Regression Imputation function}
+\title{Logistic Regression Imputation function}
 \usage{
 impute_with_logistic_regression(sc, sdf, target_col, feature_cols)
 }

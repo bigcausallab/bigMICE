@@ -107,7 +107,7 @@ mice.spark <- function(data,
 
   # List to store per-imputation information
   imputation_stats <- vector("list", m)
-  #############################
+  # ############################
 
 
   # FOR EACH IMPUTATION SET i = 1, ..., m
@@ -283,21 +283,19 @@ sampler.spark <- function(sc,
 
       # DEFAULT: all other variables
       feature_cols <- setdiff(var_names, label_col)
-      #remove the features with "none" imputation method (lpopNr, Unit_code, etc... )
+      # remove the features with "none" imputation method (lpopNr, Unit_code, etc... )
       feature_cols <- feature_cols[which(imp_methods[feature_cols] != "none")]
       # If predictorMatrix is provided, use it to select the features
       if(!is.null(predictorMatrix)){
-        #print("Applying User defined predictor matrix")
+
         #Fetch the user-defined predictors for the label var_j
         UD_predictors <- colnames(predictorMatrix)[predictorMatrix[label_col, ]]
-        #print("User defined predictors")
-        #print(UD_predictors)
+
         #Check if the predictors are in the data
         if(length(UD_predictors) > 0){
           #If they are, use them as features
           feature_cols <- intersect(feature_cols, UD_predictors)
-          #Print the features used for debug
-          #print(paste("Using user-defined predictors for variable", label_col, ":", paste(feature_cols, collapse = ", ")))
+
 
         }else{
           #If not, use stop
@@ -306,10 +304,9 @@ sampler.spark <- function(sc,
         }
       }else{
         #If not, use the default predictors
-        #print("Using default predictors")
       }
-      #print(feature_cols)
-      #Filter out Date data type (unsupported)
+
+      # Filter out Date data type (unsupported)
       feature_cols <- feature_cols[sapply(var_types[feature_cols],
                                           function(x) !(x %in% c("String", "smalldatetime")))]
 

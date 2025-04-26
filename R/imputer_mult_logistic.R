@@ -1,4 +1,4 @@
-#' Multinomial Linear Regression Imputation function
+#' Multinomial Logistic Regression Imputation function
 #'
 #' This function imputes missing values in a Spark DataFrame using Multinomial Logistic regression.
 #'
