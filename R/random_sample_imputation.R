@@ -98,8 +98,6 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
   }
 
   # Remove the temporary ID column and return
-  sdf_with_id %>%
-    dplyr::arrange(temp_row_id) %>%
-    dplyr::select(-"temp_row_id")
+  sdf %>% dplyr::arrange(temp_row_id) %>% dplyr::select(-"temp_row_id")
 }
 
