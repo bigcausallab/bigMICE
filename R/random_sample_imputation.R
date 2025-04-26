@@ -59,7 +59,8 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
     cat("Sampling", n_missing, "values\n")
 
     # Sample n_missing values from the observed values
-
+    # The following approach is more accurate, but exponentially slower with sample size
+    # 50k samples -> 40s, 500k samples -> No results after 15min +
     start_time <- Sys.time()
     sampled_values <- observed_data %>%
       dplyr::select(!!rlang::sym(col)) %>%  # Only need the column to sample
@@ -82,6 +83,30 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
     cat("Time taken to sample values2:", end_time - start_time, "\n")
     n_sampled2 <- sparklyr::sdf_nrow(sampled_values2)
     cat(" n_sampled2", n_sampled2,"\n")
+
+    start_time <- Sys.time()
+    sampled_values3 <- observed_data %>%
+      dplyr::select(!!rlang::sym(col)) %>%
+      sparklyr::sdf_sample(fraction = n_missing/n_observed, replacement = TRUE) %>%
+      utils::head(n_missing) %>%
+      sparklyr::sdf_with_sequential_id(id = "id")
+    end_time <- Sys.time()
+    cat("Time taken to sample values3:", end_time - start_time, "\n")
+    n_sampled3 <- sparklyr::sdf_nrow(sampled_values3)
+    cat(" n_sampled2", n_sampled3,"\n")
+
+    start_time <- Sys.time()
+    frac_boosted <- n_missing/n_observed + 5/100
+    cat("Boosted fraction", frac_boosted, "\n")
+    sampled_values4 <- observed_data %>%
+      dplyr::select(!!rlang::sym(col)) %>%
+      sparklyr::sdf_sample(fraction = frac_boosted, replacement = TRUE) %>%
+      utils::head(n_missing) %>%
+      sparklyr::sdf_with_sequential_id(id = "id")
+    end_time <- Sys.time()
+    cat("Time taken to sample values4:", end_time - start_time, "\n")
+    n_sampled4 <- sparklyr::sdf_nrow(sampled_values4)
+    cat(" n_sampled2", n_sampled4,"\n")
 
     # Add sequential ID to missing_data for joining
     # missing_data_with_id <- missing_data %>%
