@@ -61,15 +61,15 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
     # Sample n_missing values from the observed values
     # The following approach is more accurate, but exponentially slower with sample size
     # 50k samples -> 40s, 500k samples -> No results after 15min +
-    start_time <- Sys.time()
-    sampled_values <- observed_data %>%
-      dplyr::select(!!rlang::sym(col)) %>%  # Only need the column to sample
-      dplyr::sample_n(size = n_missing, replace = TRUE) %>%
-      sparklyr::sdf_with_sequential_id(id = "id")
-    end_time <- Sys.time()
-    cat("Time taken to sample values:", end_time - start_time, "\n")
-    n_sampled <- sparklyr::sdf_nrow(sampled_values)
-    cat(" n_sampled", n_sampled,"\n")
+    # start_time <- Sys.time()
+    # sampled_values <- observed_data %>%
+    #   dplyr::select(!!rlang::sym(col)) %>%  # Only need the column to sample
+    #   dplyr::sample_n(size = n_missing, replace = TRUE) %>%
+    #   sparklyr::sdf_with_sequential_id(id = "id")
+    # end_time <- Sys.time()
+    # cat("Time taken to sample values:", end_time - start_time, "\n")
+    # n_sampled <- sparklyr::sdf_nrow(sampled_values)
+    # cat(" n_sampled", n_sampled,"\n")
 
 
     # The following approach is innacurate, fraction is not precise and results in less sampeld values than needed.
