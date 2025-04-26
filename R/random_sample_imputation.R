@@ -56,23 +56,30 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
       cat("No missing values or no observed values to sample from")
       next
     }
-    cat("Sampling", n_missing, "values")
+    cat("Sampling", n_missing, "values\n")
 
     # Sample n_missing values from the observed values
+
+    start_time <- Sys.time()
     sampled_values <- observed_data %>%
       dplyr::select(!!rlang::sym(col)) %>%  # Only need the column to sample
       dplyr::sample_n(size = n_missing, replace = TRUE) %>%
       sparklyr::sdf_with_sequential_id(id = "id")
-
+    end_time <- Sys.time()
+    cat("Time taken to sample values:", end_time - start_time, "\n")
     n_sampled <- sparklyr::sdf_nrow(sampled_values)
     cat(" n_sampled", n_sampled,"\n")
 
+
+    # The following approach is innacurate, fraction is not precise and results in less sampeld values than needed.
+    start_time <- Sys.time()
     sampled_values2 <- observed_data %>%
       dplyr::select(!!rlang::sym(col)) %>%
-      sparklyr::sdf_sample(fraction = fraction_missing, replacement = TRUE) %>%
+      sparklyr::sdf_sample(fraction = n_missing/n_observed, replacement = TRUE) %>%
       utils::head(n_missing) %>%
       sparklyr::sdf_with_sequential_id(id = "id")
-
+    end_time <- Sys.time()
+    cat("Time taken to sample values2:", end_time - start_time, "\n")
     n_sampled2 <- sparklyr::sdf_nrow(sampled_values2)
     cat(" n_sampled2", n_sampled2,"\n")
 
