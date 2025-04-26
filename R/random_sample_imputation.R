@@ -72,64 +72,71 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
     # cat(" n_sampled", n_sampled,"\n")
 
 
-    # The following approach is innacurate, fraction is not precise and results in less sampeld values than needed.
-    start_time <- Sys.time()
-    sampled_values2 <- observed_data %>%
-      dplyr::select(!!rlang::sym(col)) %>%
-      sparklyr::sdf_sample(fraction = n_missing/n_observed, replacement = TRUE) %>%
-      utils::head(n_missing) %>%
-      sparklyr::sdf_with_sequential_id(id = "id")
-    end_time <- Sys.time()
-    cat("Time taken to sample values2:", end_time - start_time, "\n")
-    n_sampled2 <- sparklyr::sdf_nrow(sampled_values2)
-    cat(" n_sampled2", n_sampled2,"\n")
+    # The following approach is inaccurate (around 1% error) and inconsistent, fraction is not precise and results in sometimes less sampled values than needed.
+    # This could be due to float precision error ?
 
-    start_time <- Sys.time()
-    sampled_values3 <- observed_data %>%
-      dplyr::select(!!rlang::sym(col)) %>%
-      sparklyr::sdf_sample(fraction = n_missing/n_observed, replacement = TRUE) %>%
-      utils::head(n_missing) %>%
-      sparklyr::sdf_with_sequential_id(id = "id")
-    end_time <- Sys.time()
-    cat("Time taken to sample values3:", end_time - start_time, "\n")
-    n_sampled3 <- sparklyr::sdf_nrow(sampled_values3)
-    cat(" n_sampled2", n_sampled3,"\n")
+    # start_time <- Sys.time()
+    # sampled_values2 <- observed_data %>%
+    #   dplyr::select(!!rlang::sym(col)) %>%
+    #   sparklyr::sdf_sample(fraction = n_missing/n_observed, replacement = TRUE) %>%
+    #   utils::head(n_missing) %>%
+    #   sparklyr::sdf_with_sequential_id(id = "id")
+    # end_time <- Sys.time()
+    # cat("Time taken to sample values2:", end_time - start_time, "\n")
+    # n_sampled2 <- sparklyr::sdf_nrow(sampled_values2)
+    # cat(" n_sampled2", n_sampled2,"\n")
+    #
+    # start_time <- Sys.time()
+    # sampled_values3 <- observed_data %>%
+    #   dplyr::select(!!rlang::sym(col)) %>%
+    #   sparklyr::sdf_sample(fraction = n_missing/n_observed, replacement = TRUE) %>%
+    #   utils::head(n_missing) %>%
+    #   sparklyr::sdf_with_sequential_id(id = "id")
+    # end_time <- Sys.time()
+    # cat("Time taken to sample values3:", end_time - start_time, "\n")
+    # n_sampled3 <- sparklyr::sdf_nrow(sampled_values3)
+    # cat(" n_sampled3", n_sampled3,"\n")
 
-    start_time <- Sys.time()
+    # Above, n_sampled_2 and n_sampled_3 are not always equal to n_missing, nor to each other
+
+
+    # Solution: Oversample by 5% and then take the first n_missing rows. It is fast and accurate: 14M samples -> 2.4s , 100% accurate during testing
+
+    #start_time <- Sys.time()
     frac_boosted <- n_missing/n_observed + 5/100
-    cat("Boosted fraction", frac_boosted, "\n")
-    sampled_values4 <- observed_data %>%
+    #cat("Boosted fraction", frac_boosted, "\n")
+    sampled_values <- observed_data %>%
       dplyr::select(!!rlang::sym(col)) %>%
       sparklyr::sdf_sample(fraction = frac_boosted, replacement = TRUE) %>%
       utils::head(n_missing) %>%
       sparklyr::sdf_with_sequential_id(id = "id")
-    end_time <- Sys.time()
-    cat("Time taken to sample values4:", end_time - start_time, "\n")
-    n_sampled4 <- sparklyr::sdf_nrow(sampled_values4)
-    cat(" n_sampled2", n_sampled4,"\n")
+    #end_time <- Sys.time()
+    #cat("Time taken to sample values4:", end_time - start_time, "\n")
+    #n_sampled4 <- sparklyr::sdf_nrow(sampled_values)
+    #cat(" n_sampled4", n_sampled4,"\n")
+
+    print(colnames(sampled_values))
 
     # Add sequential ID to missing_data for joining
-    # missing_data_with_id <- missing_data %>%
-    #   sdf_with_sequential_id(id = "id")
+    missing_data_with_id <- missing_data %>% sdf_with_sequential_id(id = "id")
 
     # Replace NA values with sampled values
-    # imputed_data <- missing_data_with_id %>%
-    #   left_join(sampled_values %>% rename(value_new = !!rlang::sym(col)), by = "id") %>%
-    #   mutate(!!rlang::sym(col) := coalesce(value_new, !!rlang::sym(col))) %>%
-    #   select(-id, -value_new)
+    imputed_data <- missing_data_with_id %>%
+      left_join(sampled_values %>% rename(value_new = !!rlang::sym(col)), by = "id") %>%
+      mutate(!!rlang::sym(col) := coalesce(value_new, !!rlang::sym(col))) %>%
+      select(-id, -value_new)
 
     # Union with observed data and sort by temp_row_id
-    # new_col_data <- imputed_data %>%
-    #   dplyr::union(observed_data) %>%
-    #   dplyr::arrange(temp_row_id)
+    new_col_data <- imputed_data %>%
+      dplyr::union(observed_data) %>%
+      dplyr::arrange(temp_row_id)
 
     # Update the column in sdf_with_id
     # Since new_col_data is a Spark DataFrame, we join and replace
-    # sdf_with_id <- sdf_with_id %>%
-    #   select(-!!rlang::sym(col)) %>%  # Drop old column
-    #   left_join(new_col_data %>% select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
-    #
-  }
+    sdf <- sdf %>% select(-!!rlang::sym(col)) %>%  # Drop old column
+      left_join(new_col_data %>% select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
+
+  } #End of for loop over columns
 
   # Remove the temporary ID column and return
   sdf %>% dplyr::arrange(temp_row_id) %>% dplyr::select(-"temp_row_id")
