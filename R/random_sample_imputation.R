@@ -27,7 +27,7 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
     cat("\nVariable", i, "out of", num_cols)
     i <- i + 1
     cat(":", col, "- ")
-
+    print(" ")
     # Skip if column doesn't exist
     if (!(col %in% colnames(sdf))) {
       warning(paste("Column", col, "not found in dataframe. Skipping."))
@@ -65,14 +65,16 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
       sparklyr::sdf_with_sequential_id(id = "id")
 
     n_sampled <- sparklyr::sdf_nrow(sampled_values)
-    cat(" n_sampled", n_sampled)
+    cat(" n_sampled", n_sampled,"\n")
 
     sampled_values2 <- observed_data %>%
       dplyr::select(!!rlang::sym(col)) %>%
-      dplyr::slice_sample(n = n_missing, replace = TRUE)
+      sparklyr::sdf_sample(fraction = fraction_missing, replacement = TRUE) %>%
+      dplyr::head(n_missing) %>%
+      sparklyr::sdf_with_sequential_id(id = "id")
 
     n_sampled2 <- sparklyr::sdf_nrow(sampled_values2)
-    cat(" n_sampled2", n_sampled2)
+    cat(" n_sampled2", n_sampled2,"\n")
 
     # Add sequential ID to missing_data for joining
     # missing_data_with_id <- missing_data %>%
