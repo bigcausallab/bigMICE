@@ -116,6 +116,7 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
     #cat(" n_sampled4", n_sampled4,"\n")
 
     print(colnames(sampled_values))
+    print(sampled_values %>% head(5))
 
     # Add sequential ID to missing_data for joining
     missing_data_with_id <- missing_data %>% sdf_with_sequential_id(id = "id")
