@@ -143,3 +143,76 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
   sdf %>% dplyr::arrange(temp_row_id) %>% dplyr::select(-"temp_row_id")
 }
 
+
+#' Random Sample Imputation function
+#'
+#' This function imputes missing values in a Spark DataFrame using random samples from the observed values.
+#' @importFrom dplyr %>%
+#'
+#' @param sc A Spark connection
+#' @param sdf A Spark DataFrame
+#' @param column The column(s) to impute. If NULL, all columns will be imputed
+#' @return The Spark DataFrame with missing values imputed
+#' @export
+#' @examples
+#' #TBD
+init_with_random_samples<- function(sc, sdf, column = NULL) {
+
+  cols_to_process <- if (!is.null(column)) column else colnames(sdf)
+  # Add sequential ID to preserve original order
+  sdf <- sdf %>% sparklyr::sdf_with_sequential_id(id = "temp_row_id")
+  num_cols <- length(cols_to_process)
+  i <- 0
+  # Process each specified column
+  for (col in cols_to_process) {
+    i <- i + 1
+    cat("\nVariable", i, "out of", num_cols)
+
+    cat(":", col, "- ")
+
+    # Skip if column doesn't exist
+    if (!(col %in% colnames(sdf))) {
+      warning(paste("Column", col, "not found in dataframe. Skipping."))
+      next
+    }
+
+    # Separate observed and missing values while maintaining original order
+    observed_data <- sdf %>% dplyr::filter(!is.na(!!rlang::sym(col)))
+    missing_data <- sdf %>% dplyr::filter(is.na(!!rlang::sym(col)))%>% sdf_with_sequential_id(id = "id")
+
+    n_missing <- sparklyr::sdf_nrow(missing_data)
+    n_observed <- sparklyr::sdf_nrow(observed_data)
+
+    fraction_missing <- n_missing / (n_missing + n_observed)
+
+    if (n_missing == 0 || n_observed == 0) {
+      cat("No missing values or no observed values to sample from")
+      next
+    }
+    cat("Sampling", n_missing, "values\n")
+
+    frac_boosted <- n_missing/n_observed + 5/100
+    sampled_values <- observed_data %>%
+      dplyr::select(!!rlang::sym(col)) %>%
+      sparklyr::sdf_sample(fraction = frac_boosted, replacement = TRUE) %>%
+      utils::head(n_missing) %>%
+      sdf_with_sequential_id()
+
+    # Replace NA values with sampled values
+    imputed_data <- missing_data %>%
+      left_join(sampled_values %>% rename(value_new = !!rlang::sym(col)), by = "id") %>%
+      mutate(!!rlang::sym(col) := coalesce(value_new, !!rlang::sym(col))) %>%
+      select(-id, -value_new)
+
+    new_col_data <- imputed_data %>% dplyr::union(observed_data)
+
+    sdf <- sdf %>%
+      select(-!!rlang::sym(col)) %>%  # Drop old column
+      left_join(new_col_data %>% select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
+
+    sdf <- sdf_checkpoint(sdf)
+
+  } #End of for loop over columns
+  sdf %>% dplyr::arrange(temp_row_id) %>% dplyr::select(-"temp_row_id")
+  return(sdf)
+}

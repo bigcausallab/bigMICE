@@ -425,26 +425,7 @@ mice.spark.plus <- function(data, #data + 10% missing
   # print("**DEBUG**: init_modes:")
   # print(init_modes)
 
-  cat("\nStarting initialisation\n")
-  # print(" ")
 
-  # print(length(init_modes))
-  # print(sdf_ncol(data))
-  #
-  init_start_time <- proc.time()
-  if(is.null(imp_init)){
-    imp_init <- impute_with_MeMoMe(sc = sc,
-                                   sdf = data,
-                                   column = NULL, #TODO: add support for this
-                                   impute_mode = init_modes)
-  }else{
-    print("Using initial imputation provided manually, I hope it is correct")
-    imp_init <- imp_init # User provided initiale imputation
-  }
-
-  init_end_time <- proc.time()
-  init_elapsed <- (init_end_time-init_start_time)['elapsed']
-  cat("Initalisation time:", init_elapsed)
   # TODO : Add elapse time to the result dataframe (and create result dataframe)
 
   ### Rubin Rules Stats INIT###
@@ -462,6 +443,16 @@ mice.spark.plus <- function(data, #data + 10% missing
 
   # FOR EACH IMPUTATION SET i = 1, ..., m
   for (i in 1:m) {
+    cat("\nStarting initialisation\n")
+
+    init_start_time <- proc.time()
+
+    imp_init <- init_with_random_samples(sc, data, column = NULL)
+
+    init_end_time <- proc.time()
+    init_elapsed <- (init_end_time-init_start_time)['elapsed']
+    cat("Initalisation time:", init_elapsed)
+
     cat("\nImputation: ", i, "\n")
 
     # Run the imputation algorithm
@@ -499,11 +490,10 @@ mice.spark.plus <- function(data, #data + 10% missing
     #print(colnames(imp))
 
     # ##### Obtain known missings sparse matrix ###########
-    #cat("Obtaining known missings sparse matrix.\n")
+    cat("Obtaining known missings sparse matrix.\n")
 
     # Collect the imo result:
-    # imp_collect <- imp %>% collect()
-    # known_missings_m <- imp_collect[where_missing]
+
     #print(known_missings_m)
 
     # Sparse location = is.na(data) & !is.na(data_true)
@@ -524,9 +514,7 @@ mice.spark.plus <- function(data, #data + 10% missing
 
     #print(known_missings_m)
 
-    # known_missings[[i]] <- known_missings_m
-    #
-
+    known_missings[[i]] <- imp
 
     #%%%% Analysis on the imputed data%%%%%
     model <- imp %>%
