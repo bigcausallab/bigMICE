@@ -499,11 +499,11 @@ mice.spark.plus <- function(data, #data + 10% missing
     #print(colnames(imp))
 
     # ##### Obtain known missings sparse matrix ###########
-    cat("Obtaining known missings sparse matrix.\n")
+    #cat("Obtaining known missings sparse matrix.\n")
 
     # Collect the imo result:
-    imp_collect <- imp %>% collect()
-    known_missings_m <- imp_collect[where_missing]
+    # imp_collect <- imp %>% collect()
+    # known_missings_m <- imp_collect[where_missing]
     #print(known_missings_m)
 
     # Sparse location = is.na(data) & !is.na(data_true)
@@ -524,8 +524,8 @@ mice.spark.plus <- function(data, #data + 10% missing
 
     #print(known_missings_m)
 
-    known_missings[[i]] <- known_missings_m
-
+    # known_missings[[i]] <- known_missings_m
+    #
 
 
     #%%%% Analysis on the imputed data%%%%%
