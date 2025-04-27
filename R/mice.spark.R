@@ -448,7 +448,7 @@ mice.spark.plus <- function(data, #data + 10% missing
     init_start_time <- proc.time()
 
     imp_init <- init_with_random_samples(sc, data, column = NULL)
-
+    imp_init <- imp_init %>% select(-all_of("temp_row_id"))
     init_end_time <- proc.time()
     init_elapsed <- (init_end_time-init_start_time)['elapsed']
     cat("Initalisation time:", init_elapsed)
