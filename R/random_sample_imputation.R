@@ -178,7 +178,8 @@ init_with_random_samples<- function(sc, sdf, column = NULL) {
 
     # Separate observed and missing values while maintaining original order
     observed_data <- sdf %>% dplyr::filter(!is.na(!!rlang::sym(col)))
-    missing_data <- sdf %>% dplyr::filter(is.na(!!rlang::sym(col)))%>% sdf_with_sequential_id(id = "id")
+    missing_data <- sdf %>% dplyr::filter(is.na(!!rlang::sym(col))) %>%
+      sparklyr::sdf_with_sequential_id(id = "id")
 
     n_missing <- sparklyr::sdf_nrow(missing_data)
     n_observed <- sparklyr::sdf_nrow(observed_data)
@@ -196,7 +197,24 @@ init_with_random_samples<- function(sc, sdf, column = NULL) {
       dplyr::select(!!rlang::sym(col)) %>%
       sparklyr::sdf_sample(fraction = frac_boosted, replacement = TRUE) %>%
       utils::head(n_missing) %>%
-      sdf_with_sequential_id()
+      sparklyr::sdf_with_sequential_id()
+
+    n_sampled_values <- sparklyr::sdf_nrow(sampled_values)
+    #cat("n_missing", n_missing,"\n")
+    #cat("n_sampled", n_sampled_values,"\n")
+    # sdf_sample is accurate in 95% of the cases, but in 5% of the cases it returns less than n_missing values...
+    while(n_sampled_values != n_missing){
+      print("undersampled, resampling...")
+
+      sampled_values <- observed_data %>%
+        dplyr::select(!!rlang::sym(col)) %>%
+        sparklyr::sdf_sample(fraction = frac_boosted, replacement = TRUE) %>%
+        utils::head(n_missing) %>%
+        sparklyr::sdf_with_sequential_id()
+
+      n_sampled_values <- sparklyr::sdf_nrow(sampled_values)
+
+    }
 
     # Replace NA values with sampled values
     imputed_data <- missing_data %>%
