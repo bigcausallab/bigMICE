@@ -24,11 +24,11 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   if (!is.character(feature_cols) || length(feature_cols) == 0) {
     stop("feature_cols must be a character vector of column names")
   }
-  print("3")
+  #print("3")
   #Step 1: add temporary id
   sdf <- sdf %>% sparklyr::sdf_with_sequential_id()
   target_col_prev <- target_col_prev %>% sparklyr::sdf_with_sequential_id()
-  print("4")
+  #print("4")
   # Step 2: Split the data into complete and incomplete rows
   # Reminder: all non target columns will have been initialized
   complete_data <- sdf %>%
@@ -36,49 +36,50 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
 
   incomplete_data <- sdf %>%
     dplyr::filter(is.na(!!rlang::sym(target_col)))
-  print("5")
+  #print("5")
   # Step 3: Build regression formula
   formula_str <- paste0(target_col, " ~ ", paste(feature_cols, collapse = " + "))
   formula_obj <- stats::as.formula(formula_str)
-  print("6")
+  #print("6")
   # Step 4: Build linear regression model on complete data
   lm_model <- complete_data %>%
     sparklyr::ml_linear_regression(formula = formula_obj,
                          elastic_net_param = elastic_net_param)
-  print(names(lm_model))
-  print("7")
+  #print(names(lm_model))
+  #print("7")
   #cat('class lm_model',class(lm_model),'\n')
   # Step 5: Predict missing values
   predictions <- sparklyr::ml_predict(lm_model, incomplete_data) %>% sparklyr::sdf_with_sequential_id("pred_id")
-  print(predictions)
-  print("77")
+  #print(predictions)
+  #print("77")
   pred_residuals <- predictions %>%
     sparklyr::inner_join(target_col_prev, by = "id")
 
   #cat("\ncolnames join", colnames(pred_residuals))
-  print("8")
+  #print("8")
   sd_res <- pred_residuals %>%
     sparklyr::mutate(residuals = (prediction - !!rlang::sym(paste0(target_col,"_y")))^2)
   #Without feature scaling, squaring make the noise too big...but i cant figure out feature scaling using sparklyr
-  print(sd_res)
-  print("9")
+  #print(sd_res)
+  #print("9")
   sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% collect()
+  print("sd/residuals")
   print(sd_res)
   sd_res <- sd_res[[1, 1]]
 
-  print("10")
+  #print("10")
   # Add noise to prediction to account for uncertainty
   n_pred <- sparklyr::sdf_nrow(predictions)
   noise_sdf <- sparklyr::sdf_rnorm(sc = sc, n = n_pred, sd = sd_res, output_col = "noise") %>% sparklyr::sdf_with_sequential_id("pred_id")
-  print("11")
-  print(noise_sdf)
+  #print("11")
+  #print(noise_sdf)
   #Join the noise and the prediction
   predictions <- predictions %>% inner_join(noise_sdf, by="pred_id") %>%
     dplyr::select(-all_of("pred_id")) %>%
     sparklyr::mutate(noisy_pred = prediction + noise) %>%
     dplyr::select(-all_of(c("prediction","noise")))
-  print("12")
-  print(predictions)
+  #print("12")
+  #print(predictions)
 
   # Replace the NULL values with predictions
   incomplete_data <- predictions %>%

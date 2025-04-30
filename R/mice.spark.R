@@ -329,12 +329,12 @@ sampler.spark <- function(sc,
       j_df <- result %>%
         sparklyr::select(-label_col) %>%
         cbind(data %>% sparklyr::select(dplyr::all_of(label_col)))
-      cat("colnames j-df", colnames(j_df))
+      #cat("colnames j-df", colnames(j_df))
       # To calculate the residuals (linear method only for now), we need to keep the previous values in label_col
-      print("1")
+      #print("1")
       label_col_prev <- result %>% sparklyr::select(label_col)
       # Could this be avoided by passing in result to the impute function ? less select actions ?
-      print("2")
+      #print("2")
       result <- switch(method,
          "Logistic" = impute_with_logistic_regression(sc, j_df, label_col, feature_cols),
          "Mult_Logistic" = impute_with_mult_logistic_regression(sc, j_df, label_col, feature_cols),
@@ -349,7 +349,7 @@ sampler.spark <- function(sc,
 
     # Checkpoint here ?
     print("checkpointing...")
-    result <- sdf_checkpoint(result)
+    result <- sparklyr::sdf_checkpoint(result)
 
   } # end of k loop (iterations)
 
