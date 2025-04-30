@@ -138,18 +138,23 @@ mice.spark <- function(data,
     # ##### Calculate Rubin Rules statistics ############
     # Fit model on imputed data
     cat("Fitting model on imputed data\n")
-    print(colnames(imp))
+    #print(colnames(imp))
+
     # Clearing the extra columns created by the imputer (Bug, needs to be fixed)
     # Need to look at each imputer to see which one returns the extra cols
     # Or does the model created also create new cols in the data ?
     pre_pred_cols <- c(colnames(data))
+    print(pre_pred_cols)
     post_pred_cols <- colnames(imp)
+    print(post_pred_cols)
     extra_cols <- setdiff(post_pred_cols, pre_pred_cols)
+
     imp <- imp %>% dplyr::select(-dplyr::all_of(extra_cols))
     print(colnames(imp))
     model <- imp %>%
       sparklyr::ml_logistic_regression(formula = formula_obj)
 
+    print(model)
     # Store model coefficients
     model_params[[i]] <- model$coefficients
     print(model$coefficients)
@@ -342,6 +347,7 @@ sampler.spark <- function(sc,
     } # end of var_j loop (each variable) (1 iteration)
 
     # Checkpoint here ?
+    print("checkpointing...")
     result <- sdf_checkpoint(result)
 
   } # end of k loop (iterations)
