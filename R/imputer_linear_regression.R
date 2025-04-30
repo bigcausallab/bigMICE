@@ -9,17 +9,13 @@
 #' @param target_col The column with missing values to impute
 #' @param feature_cols The columns to use as features in the linear regression model. These columns should not have missing values.
 #' @param elastic_net_param The elastic net parameter for the linear regression model. Default is 0 (ridge regression)
+#' @param target_col_prev the target column at the previous iteration. Used to calculate residuals.
 #' @return The Spark DataFrame with missing values imputed in the target column
 #' @export
 #' @examples
 #' #TBD
 
-impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, elastic_net_param = 0) {
-  # Given a spark connection, a spark dataframe, a target column with missing values,
-  # and feature columns without missing values, this function:
-  # 1. Builds a linear regression model using complete cases
-  # 2. Uses that model to predict missing values
-  # 3. Returns a dataframe with imputed values in the target column
+impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, elastic_net_param = 0,target_col_prev) {
 
   # Step 0; Validate inputs
   if (!is.character(target_col) || length(target_col) != 1) {
@@ -28,8 +24,10 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   if (!is.character(feature_cols) || length(feature_cols) == 0) {
     stop("feature_cols must be a character vector of column names")
   }
+
   #Step 1: add temporary id
   sdf <- sdf %>% sparklyr::sdf_with_sequential_id()
+  target_col_prev <- target_col_prev %>% sparklyr::sdf_with_sequential_id()
 
   # Step 2: Split the data into complete and incomplete rows
   # Reminder: all non target columns will have been initialized
@@ -48,13 +46,39 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
     sparklyr::ml_linear_regression(formula = formula_obj,
                          elastic_net_param = elastic_net_param)
 
+  #cat('class lm_model',class(lm_model),'\n')
   # Step 5: Predict missing values
-  predictions <- sparklyr::ml_predict(lm_model, incomplete_data)
+  predictions <- sparklyr::ml_predict(lm_model, incomplete_data) %>% sparklyr::sdf_with_sequential_id("pred_id")
+
+  pred_residuals <- predictions %>%
+    sparklyr::inner_join(target_col_prev, by = "id")
+
+  #cat("\ncolnames join", colnames(pred_residuals))
+
+  sd_res <- pred_residuals %>%
+    sparklyr::mutate(residuals = (prediction - !!rlang::sym(paste0(target_col,"_y")))^2)
+  #Without feature scaling, squaring make the noise too big...but i cant figure out feature scaling using sparklyr
+
+  sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% collect()
+  sd_res <- sd_res[[1, 1]]
+
+  # Add noise to prediction to account for uncertainty
+  n_pred <- sparklyr::sdf_nrow(predictions)
+  noise_sdf <- sparklyr::sdf_rnorm(sc = sc, n = n_pred, sd = sd_res, output_col = "noise") %>% sparklyr::sdf_with_sequential_id("pred_id")
+
+  print(noise_sdf)
+  #Join the noise and the prediction
+  predictions <- predictions %>% inner_join(noise_sdf, by="pred_id") %>%
+    dplyr::select(-all_of("pred_id")) %>%
+    sparklyr::mutate(noisy_pred = prediction + noise) %>%
+    dplyr::select(-all_of(c("prediction","noise")))
+
+  print(predictions)
 
   # Replace the NULL values with predictions
   incomplete_data <- predictions %>%
     dplyr::select(-!!rlang::sym(target_col)) %>%  # Remove the original NULL column
-    dplyr::rename(!!rlang::sym(target_col) := prediction)  # Rename prediction to target_col
+    dplyr::rename(!!rlang::sym(target_col) := noisy_pred)  # Rename prediction to target_col
 
   # Re join the observed and imputed rows
   result <- complete_data %>%

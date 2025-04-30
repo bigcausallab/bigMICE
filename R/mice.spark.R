@@ -268,24 +268,33 @@ sampler.spark <- function(sc,
 
   imp_methods <- replace(var_types, var_types %in% names(method_dict), method_dict[var_types])
   names(imp_methods) <- var_names
-  print(imp_methods)
+  # print(imp_methods)
   num_vars <- length(var_names)
+  # print("**DEBUG**: imp_methods:")
+  # initialize the result with the initial imputation (mean or random)
+  result <- imp_init
 
   for (k in from:to){
     cat("\n iteration: ", k)
+
     # For each variable j in the data
     j <- 0
     for (var_j in var_names){
-      j <- j+1
+      j <- j + 1
       cat("\n",j,"/",num_vars,"Imputing variable", var_j," using method ")
+
+      method <- imp_methods[[var_j]]
+      cat(method,"\n")
+
       # Obtain the variables use to predict the missing values of variable j and create feature column
-      label_col <- var_j
+      label_col <- var_j # string object
 
       # DEFAULT: all other variables
       feature_cols <- setdiff(var_names, label_col)
       # remove the features with "none" imputation method (lpopNr, Unit_code, etc... )
       feature_cols <- feature_cols[which(imp_methods[feature_cols] != "none")]
-      # If predictorMatrix is provided, use it to select the features
+
+      # NON-DEFAULT: If predictorMatrix is provided, use it to select the features
       if(!is.null(predictorMatrix)){
 
         #Fetch the user-defined predictors for the label var_j
@@ -306,42 +315,39 @@ sampler.spark <- function(sc,
         #If not, use the default predictors
       }
 
-      # Filter out Date data type (unsupported)
+      # Filter out Date data type (unsupported) (redundant?)
       feature_cols <- feature_cols[sapply(var_types[feature_cols],
                                           function(x) !(x %in% c("String", "smalldatetime")))]
 
-      # Replace initialized values in label column with the original missing values
-      j_df <- imp_init %>%
+      # Replace present values in label column with the original missing values
+      # Is this done innefficiently (cbind)? Need to look into more optimized method maybe
+      j_df <- result %>%
         sparklyr::select(-label_col) %>%
         cbind(data %>% sparklyr::select(dplyr::all_of(label_col)))
-
-
-      method <- imp_methods[[var_j]]
-      cat(method)
+      cat("colnames j-df", colnames(j_df))
+      # To calculate the residuals (linear method only for now), we need to keep the previous values in label_col
+      label_col_prev <- result %>% sparklyr::select(label_col)
+      # Could this be avoided by passing in result to the impute function ? less select actions ?
 
       result <- switch(method,
-                       "Logistic" = impute_with_logistic_regression(sc, j_df, label_col, feature_cols),
-                       "Mult_Logistic" = impute_with_mult_logistic_regression(sc, j_df, label_col, feature_cols),
-                       "Linear" = impute_with_linear_regression(sc, j_df, label_col, feature_cols),
-                       "RandomForestClassifier" = impute_with_random_forest_classifier(sc, j_df, label_col, feature_cols),
-                       "none" = j_df, # don't impute this variable
-                       "Invalid method"  # Default case
-      )
-      #Use the result to do something to the original dataset
-      #print(result)
-      # To avoid stackoverflow error, I try to break/collect? the lineage after each imputation
-      # Might not be necessary at every iteration. only run into error after ~25 imputations
-      #result %>% sparklyr::sdf_persist()
+         "Logistic" = impute_with_logistic_regression(sc, j_df, label_col, feature_cols),
+         "Mult_Logistic" = impute_with_mult_logistic_regression(sc, j_df, label_col, feature_cols),
+         "Linear" = impute_with_linear_regression(sc=sc, sdf=j_df, target_col=label_col,
+                                        feature_cols=feature_cols, target_col_prev=label_col_prev),
+         "RandomForestClassifier" = impute_with_random_forest_classifier(sc, j_df, label_col, feature_cols),
+         "none" = j_df, # don't impute this variable
+         "Invalid method"  # Default case, should never be reached
+      ) # end of switch block
 
-      # But this does not seems to work. Still run into stack_overflow error when not enough memory in sc
+    } # end of var_j loop (each variable) (1 iteration)
 
-    } #end of var_j loop (each variable)
-    #
-    # result %>% sparklyr::sdf_persist()
-  } #end of k loop (iterations)
-  # The sampler has finish his iterative work, can now return the imputed dataset ?
+    # Checkpoint here ?
+    result <- sdf_checkpoint(result)
+
+  } # end of k loop (iterations)
+
   return(result)
-}
+} # end of sampler.spark function
 
 #' MICE+ for Spark DataFrames using Sparklyr and Spark MLlib
 #'

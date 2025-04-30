@@ -9,7 +9,8 @@ impute_with_linear_regression(
   sdf,
   target_col,
   feature_cols,
-  elastic_net_param = 0
+  elastic_net_param = 0,
+  target_col_prev
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ impute_with_linear_regression(
 \item{feature_cols}{The columns to use as features in the linear regression model. These columns should not have missing values.}
 
 \item{elastic_net_param}{The elastic net parameter for the linear regression model. Default is 0 (ridge regression)}
+
+\item{target_col_prev}{the target column at the previous iteration. Used to calculate residuals.}
 }
 \value{
 The Spark DataFrame with missing values imputed in the target column
