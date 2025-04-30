@@ -45,7 +45,7 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   lm_model <- complete_data %>%
     sparklyr::ml_linear_regression(formula = formula_obj,
                          elastic_net_param = elastic_net_param)
-  print(lm_model)
+  print(names(lm_model))
   print("7")
   #cat('class lm_model',class(lm_model),'\n')
   # Step 5: Predict missing values
