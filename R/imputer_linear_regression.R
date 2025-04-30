@@ -58,9 +58,12 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   sd_res <- pred_residuals %>%
     sparklyr::mutate(residuals = (prediction - !!rlang::sym(paste0(target_col,"_y")))^2)
   #Without feature scaling, squaring make the noise too big...but i cant figure out feature scaling using sparklyr
+  print(sd_res)
   print("9")
   sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% collect()
+  print(sd_res)
   sd_res <- sd_res[[1, 1]]
+
   print("10")
   # Add noise to prediction to account for uncertainty
   n_pred <- sparklyr::sdf_nrow(predictions)
