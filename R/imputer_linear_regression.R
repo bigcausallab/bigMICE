@@ -64,9 +64,9 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   #print("9")
   sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% collect()
   print("sd/residuals")
-  print(sd_res)
-  sd_res <- sd_res[[1, 1]]
 
+  sd_res <- sqrt(sd_res[[1, 1]])
+  print(sd_res)
   #print("10")
   # Add noise to prediction to account for uncertainty
   n_pred <- sparklyr::sdf_nrow(predictions)
