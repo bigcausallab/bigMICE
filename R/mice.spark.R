@@ -107,7 +107,7 @@ mice.spark <- function(data,
 
   # List to store per-imputation information
   imputation_stats <- vector("list", m)
-  # ############################
+
 
 
   # FOR EACH IMPUTATION SET i = 1, ..., m
@@ -135,7 +135,7 @@ mice.spark <- function(data,
 
     # Compute user-provided analysis on the fly on the imputed data ?
 
-    # ##### Calculate Rubin Rules statistics ############
+    # Calculate Rubin Rules statistics
     # Fit model on imputed data
     cat("Fitting model on imputed data\n")
     #print(colnames(imp))
@@ -450,7 +450,7 @@ mice.spark.plus <- function(data, #data + 10% missing
 
   # List to store per-imputation information
   imputation_stats <- vector("list", m)
-  #############################
+
   # Object to store the known missing sparse matrices
   known_missings <- list()
 
@@ -490,7 +490,7 @@ mice.spark.plus <- function(data, #data + 10% missing
 
     # Compute user-provided analysis on the fly on the imputed data ?
 
-    # ##### Calculate Rubin Rules statistics ############
+    # Calculate Rubin Rules statistics
     # Fit model on imputed data
     cat("Fitting model on imputed data\n")
     #print(colnames(imp))
@@ -503,7 +503,7 @@ mice.spark.plus <- function(data, #data + 10% missing
     imp <- imp %>% dplyr::select(-dplyr::all_of(extra_cols))
     #print(colnames(imp))
 
-    # ##### Obtain known missings sparse matrix ###########
+    # Obtain known missings sparse matrix
     cat("Obtaining known missings sparse matrix.\n")
 
     # Collect the imo result:
