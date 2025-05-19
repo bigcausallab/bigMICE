@@ -192,7 +192,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL) {
     }
     cat("Sampling", n_missing, "values\n")
 
-    frac_boosted <- n_missing/n_observed + 5/100
+    frac_boosted <- n_missing/n_observed + 5/100 #sdf_sample is not precise 100% of the time so I oversample then truncate.
     sampled_values <- observed_data %>%
       dplyr::select(!!rlang::sym(col)) %>%
       sparklyr::sdf_sample(fraction = frac_boosted, replacement = TRUE) %>%
@@ -202,7 +202,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL) {
     n_sampled_values <- sparklyr::sdf_nrow(sampled_values)
     #cat("n_missing", n_missing,"\n")
     #cat("n_sampled", n_sampled_values,"\n")
-    # sdf_sample is accurate in 95% of the cases, but in 5% of the cases it returns less than n_missing values...
+    # While oversampling works most of the time, it still sometimes misses, so I resample until it is accurate
     while(n_sampled_values != n_missing){
       print("undersampled, resampling...")
 
