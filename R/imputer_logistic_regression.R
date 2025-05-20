@@ -111,8 +111,6 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
   # At this point, the column prob_pred contains the predictions that take into account the predictive uncertainty
 
 
-
-
   # removing columns created during procedure
   pre_pred_cols <- c(colnames(incomplete_data),"prob_pred")
   post_pred_cols <- colnames(predictions)

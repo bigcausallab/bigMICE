@@ -48,6 +48,65 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   predictions <- sparklyr::ml_predict(model, incomplete_data)
   #print(colnames(predictions))
 
+
+
+  # At this point , predictions$prediction holds the predicted values without taking into account uncertainty.
+  # To take into account the predictive uncertainty, we need to extract the probabilities
+  # Step 1: Generate random uniform values and add them to the sdf
+  n_missing <- predictions %>% count() %>% collect() %>% pull()
+  runif_values <- sparklyr::sdf_runif(sc, n_missing,output_col = "runif") %>%
+    sparklyr::sdf_with_sequential_id(id = "temp_id_runif")
+
+  predictions <- predictions %>%
+    sparklyr::sdf_with_sequential_id(id = "temp_id_runif") %>%
+    left_join(runif_values, by = "temp_id_runif") %>%
+    select(-temp_id_runif)
+
+  # Step 2: Extract the class names from the probability columns
+  # This step is done because the classes might not always be ordered numbers
+  classes <- colnames(predictions %>% select(starts_with("probability_"))) %>%
+    sub(pattern = "probability_", replacement = "")
+
+  cat("LogReg - DEBUG: class names = ", classes)
+
+  # Step 3: Generate the cumulative probability columns:
+  for (i in seq_along(classes)) {
+    class_subset <- classes[1:i]
+    prob_cols <- paste0("probability_", class_subset)
+    cumprob_col <- paste0("cumprob_", classes[i])
+
+    # Spark doesn't allow row-wise, so we add columns using SQL expression
+    expr <- paste(prob_cols, collapse = " + ")
+
+    predictions <- predictions %>%
+      mutate(!!cumprob_col := sql(expr))
+  }
+  # Step 4: Add the probabilistic prediction using runif and cumprob_ columns
+  # Again here, use of SQL expressions. I used the help of generative AI so I don't fully understand that part, but it looks like it is working.
+
+  # Build case_when conditions as SQL snippets:
+  case_when_sql <- paste0(
+    "WHEN runif <= ", paste0("cumprob_", classes[1]), " THEN '", classes[1], "' "
+  )
+
+  if(length(classes) > 1){
+    for(i in 2:length(classes)){
+      cond <- paste0("WHEN runif > ", paste0("cumprob_", classes[i-1]),
+                     " AND runif <= ", paste0("cumprob_", classes[i]),
+                     " THEN '", classes[i], "' ")
+      case_when_sql <- paste0(case_when_sql, cond)
+    }
+  }
+
+  # Add ELSE clause for safety (optional):
+  case_when_sql <- paste0("CASE ", case_when_sql, " ELSE NULL END")
+
+  # Add prob_pred column using SQL expression:
+  predictions <- predictions %>% mutate(prob_pred = sql(case_when_sql))
+
+  # At this point, the column prob_pred contains the predictions that take into account the predictive uncertainty
+
+
   # removing unused created columns (only need prediction)
   pre_pred_cols <- c(colnames(incomplete_data),"prediction")
   post_pred_cols <- colnames(predictions)
@@ -58,7 +117,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   incomplete_data <- predictions %>%
     dplyr::select(-!!rlang::sym(target_col)) %>%  # Remove the original NULL column
     #dplyr::mutate(prediction = as.logical(prediction)) %>%
-    dplyr::rename(!!rlang::sym(target_col) := prediction)  # Rename prediction to target_col
+    dplyr::rename(!!rlang::sym(target_col) := prob_pred)  # Rename prediction to target_col
 
   # Step 6: Combine complete and imputed data
   result <- complete_data %>%

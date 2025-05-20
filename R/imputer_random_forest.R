@@ -46,6 +46,9 @@ impute_with_random_forest_regressor <- function(sc, sdf, target_col, feature_col
   # Step 5: Predict missing values
   predictions <- sparklyr::ml_predict(model, incomplete_data)
 
+  print("DEBUG: colnames ")
+  print(colnames(predictions))
+
   # removing unused created columns (only need prediction)
   pre_pred_cols <- c(colnames(incomplete_data),"prediction")
   post_pred_cols <- colnames(predictions)
@@ -115,6 +118,9 @@ impute_with_random_forest_classifier <- function(sc, sdf, target_col, feature_co
 
   # Step 5: Predict missing values
   predictions <- sparklyr::ml_predict(model, incomplete_data)
+
+  print("DEBUG: colnames ")
+  print(colnames(predictions))
 
   # removing unused created columns (only need prediction)
   pre_pred_cols <- c(colnames(incomplete_data),"prediction")
