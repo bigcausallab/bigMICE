@@ -4,7 +4,13 @@
 \alias{impute_with_random_forest_regressor}
 \title{Random Forest Regression Imputation function}
 \usage{
-impute_with_random_forest_regressor(sc, sdf, target_col, feature_cols)
+impute_with_random_forest_regressor(
+  sc,
+  sdf,
+  target_col,
+  feature_cols,
+  target_col_prev
+)
 }
 \arguments{
 \item{sc}{A Spark connection}
@@ -14,6 +20,8 @@ impute_with_random_forest_regressor(sc, sdf, target_col, feature_cols)
 \item{target_col}{The column with missing values to impute}
 
 \item{feature_cols}{The columns to use as features in the Random Forest regression model. These columns should not have missing values.}
+
+\item{target_col_prev}{the target column at the previous iteration. Used to calculate residuals.}
 }
 \value{
 The Spark DataFrame with missing values imputed in the target column

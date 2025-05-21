@@ -341,6 +341,8 @@ sampler.spark <- function(sc,
          "Linear" = impute_with_linear_regression(sc=sc, sdf=j_df, target_col=label_col,
                                         feature_cols=feature_cols, target_col_prev=label_col_prev),
          "RandomForestClassifier" = impute_with_random_forest_classifier(sc, j_df, label_col, feature_cols),
+         "RandomForestRegressor" = impute_with_random_forest_regressor(sc, sdf=j_df, target_col=label_col,
+                                        feature_cols=feature_cols, target_col_prev=label_col_prev),
          "none" = j_df, # don't impute this variable
          "Invalid method"  # Default case, should never be reached
       ) # end of switch block
