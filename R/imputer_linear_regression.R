@@ -49,21 +49,28 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   # Step 5: Predict missing values
   predictions <- sparklyr::ml_predict(lm_model, incomplete_data) %>%
     sparklyr::sdf_with_sequential_id("pred_id")
-
+  print("DEBUGlinear: 5.1")
   pred_residuals <- predictions %>%
     sparklyr::inner_join(target_col_prev, by = "id")
-
+  print("DEBUGlinear: 5.2")
   sd_res <- pred_residuals %>%
     sparklyr::mutate(residuals = (prediction - !!rlang::sym(paste0(target_col,"_y")))^2)
-
+  print("DEBUGlinear: 5.3")
   sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% collect()
+  print("DEBUGlinear: 5.4")
   sd_res <- sqrt(sd_res[[1, 1]])
-
+  print('sd_res')
+  print(sd_res)
+  print("DEBUGlinear: 5.5")
   # Add noise to prediction to account for uncertainty
   n_pred <- sparklyr::sdf_nrow(predictions)
+  print("n_pred")
+  print(n_pred)
   noise_sdf <- sparklyr::sdf_rnorm(sc = sc, n = n_pred, sd = sd_res, output_col = "noise") %>%
     sparklyr::sdf_with_sequential_id("pred_id")
-
+  print("noise_sdf_rows")
+  print(sparklyr::sdf_nrow(noise_sdf))
+  print("DEBUGlinear: 5.6")
   #Join the noise and the prediction
   predictions <- predictions %>% inner_join(noise_sdf, by="pred_id") %>%
     dplyr::select(-all_of("pred_id")) %>%
