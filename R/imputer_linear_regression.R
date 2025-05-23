@@ -28,6 +28,7 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   #Step 1: add temporary id
   sdf <- sdf %>% sparklyr::sdf_with_sequential_id()
   target_col_prev <- target_col_prev %>% sparklyr::sdf_with_sequential_id()
+  print(target_col_prev)
   print("DEBUGlinear: 2")
   # Step 2: Split the data into complete and incomplete rows
   # Reminder: all non target columns will have been initialized
@@ -49,12 +50,15 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   # Step 5: Predict missing values
   predictions <- sparklyr::ml_predict(lm_model, incomplete_data) %>%
     sparklyr::sdf_with_sequential_id("pred_id")
+  print(predictions)
   print("DEBUGlinear: 5.1")
   pred_residuals <- predictions %>%
     sparklyr::inner_join(target_col_prev, by = "id")
+  print(pred_residuals)
   print("DEBUGlinear: 5.2")
   sd_res <- pred_residuals %>%
     sparklyr::mutate(residuals = (prediction - !!rlang::sym(paste0(target_col,"_y")))^2)
+  print(sd_res)
   print("DEBUGlinear: 5.3")
   sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% collect()
   print("DEBUGlinear: 5.4")
