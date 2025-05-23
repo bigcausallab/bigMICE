@@ -59,43 +59,43 @@ mice.spark <- function(data,
 
   # Dictionnary to infer initialization method based on variable type
   # Should be one of (mean, mode, median, none), and be used as input of MeMoMe function
-  init_dict <- c("Binary" = "mode",
-                 "Nominal" = "mode",
-                 "Ordinal" = "mode",
-                 "Code (don't impute)" = "none", # LopNr, Unit_code etc...
-                 "Continuous_int" = "median",
-                 "Continuous_float" = "mean",
-                 "smalldatetime" = "none",
-                 "String" = "none", #TBD
-                 "Count" = "median", #TBD
-                 "Semi-continuous" = "none", #TBD
-                 "Else", "none")
-
-  init_modes <- replace(variable_types, variable_types %in% names(init_dict), init_dict[variable_types])
-  names(init_modes) <- cols
-  # print("**DEBUG**: init_modes:")
-  # print(init_modes)
-
-  cat("\nStarting initialisation\n")
-  # print(" ")
-
-  # print(length(init_modes))
-  # print(sdf_ncol(data))
+  # init_dict <- c("Binary" = "mode",
+  #                "Nominal" = "mode",
+  #                "Ordinal" = "mode",
+  #                "Code (don't impute)" = "none", # LopNr, Unit_code etc...
+  #                "Continuous_int" = "median",
+  #                "Continuous_float" = "mean",
+  #                "smalldatetime" = "none",
+  #                "String" = "none", #TBD
+  #                "Count" = "median", #TBD
+  #                "Semi-continuous" = "none", #TBD
+  #                "Else", "none")
   #
-  init_start_time <- proc.time()
-  if(is.null(imp_init)){
-    imp_init <- impute_with_MeMoMe(sc = sc,
-                                   sdf = data,
-                                   column = NULL, #TODO: add support for this
-                                   impute_mode = init_modes)
-  }else{
-    print("Using initial imputation provided manually, I hope it is correct")
-    imp_init <- imp_init # User provided initiale imputation
-  }
-
-  init_end_time <- proc.time()
-  init_elapsed <- (init_end_time-init_start_time)['elapsed']
-  cat("\nInitalisation time:", init_elapsed)
+  # init_modes <- replace(variable_types, variable_types %in% names(init_dict), init_dict[variable_types])
+  # names(init_modes) <- cols
+  # # print("**DEBUG**: init_modes:")
+  # # print(init_modes)
+  #
+  # cat("\nStarting initialisation\n")
+  # # print(" ")
+  #
+  # # print(length(init_modes))
+  # # print(sdf_ncol(data))
+  # #
+  # init_start_time <- proc.time()
+  # if(is.null(imp_init)){
+  #   imp_init <- impute_with_MeMoMe(sc = sc,
+  #                                  sdf = data,
+  #                                  column = NULL, #TODO: add support for this
+  #                                  impute_mode = init_modes)
+  # }else{
+  #   print("Using initial imputation provided manually, I hope it is correct")
+  #   imp_init <- imp_init # User provided initiale imputation
+  # }
+  #
+  # init_end_time <- proc.time()
+  # init_elapsed <- (init_end_time-init_start_time)['elapsed']
+  # cat("\nInitalisation time:", init_elapsed)
   # TODO : Add elapse time to the result dataframe (and create result dataframe)
 
   ### Rubin Rules Stats INIT###
@@ -112,6 +112,17 @@ mice.spark <- function(data,
 
   # FOR EACH IMPUTATION SET i = 1, ..., m
   for (i in 1:m) {
+    cat("\nStarting initialisation\n")
+
+    init_start_time <- proc.time()
+
+    imp_init <- init_with_random_samples(sc, data, column = NULL)
+    imp_init <- imp_init %>% select(-all_of("temp_row_id"))
+    # Check that the initialised data does not contain any missing values
+    init_end_time <- proc.time()
+    init_elapsed <- (init_end_time-init_start_time)['elapsed']
+    cat("Initalisation time:", init_elapsed)
+
     cat("\nImputation: ", i, "\n")
 
     # Run the imputation algorithm
