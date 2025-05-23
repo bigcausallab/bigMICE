@@ -95,7 +95,7 @@ mice.spark <- function(data,
 
   init_end_time <- proc.time()
   init_elapsed <- (init_end_time-init_start_time)['elapsed']
-  cat("Initalisation time:", init_elapsed)
+  cat("\nInitalisation time:", init_elapsed)
   # TODO : Add elapse time to the result dataframe (and create result dataframe)
 
   ### Rubin Rules Stats INIT###
@@ -286,7 +286,7 @@ sampler.spark <- function(sc,
     j <- 0
     for (var_j in var_names){
       j <- j + 1
-      cat("\n",j,"/",num_vars,"Imputing variable", var_j," using method ")
+      cat("\n",j,"/",num_vars,"Imputing variable", var_j,"using method ")
 
       method <- imp_methods[[var_j]]
       cat(method,"\n")
@@ -325,7 +325,7 @@ sampler.spark <- function(sc,
                                           function(x) !(x %in% c("String", "smalldatetime")))]
 
       # Replace present values in label column with the original missing values
-      # Is this done innefficiently (cbind)? Need to look into more optimized method maybe
+      # Is this done innefficiently (cbind)? Need to look into more optimized method maybe (spark native)
       j_df <- result %>%
         sparklyr::select(-label_col) %>%
         cbind(data %>% sparklyr::select(dplyr::all_of(label_col)))
@@ -333,6 +333,8 @@ sampler.spark <- function(sc,
       # To calculate the residuals (linear method only for now), we need to keep the previous values in label_col
       #print("1")
       label_col_prev <- result %>% sparklyr::select(label_col)
+      print("DEBUG: label_col_prev")
+      print(label_col_prev)
       # Could this be avoided by passing in result to the impute function ? less select actions ?
       #print("2")
       result <- switch(method,
@@ -346,7 +348,7 @@ sampler.spark <- function(sc,
          "none" = j_df, # don't impute this variable
          "Invalid method"  # Default case, should never be reached
       ) # end of switch block
-
+      print("DEBUG: post switch")
     } # end of var_j loop (each variable) (1 iteration)
 
     # Checkpoint here ?
