@@ -122,7 +122,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   incomplete_data <- predictions %>%
     dplyr::select(-!!rlang::sym(target_col)) %>%  # Remove the original NULL column
     #dplyr::mutate(prediction = as.logical(prediction)) %>%
-    dplyr::rename(!!rlang::sym(target_col) := prob_pred)  # Rename prediction to target_col
+    dplyr::rename(!!rlang::sym(target_col) := prediction)  # Rename prediction to target_col
 
   # Step 6: Combine complete and imputed data
   result <- complete_data %>%
