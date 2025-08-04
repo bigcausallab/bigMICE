@@ -39,6 +39,12 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
 
   incomplete_data <- sdf %>%
     dplyr::filter(is.na(!!rlang::sym(target_col)))
+  n_incomplete <- sparklyr::sdf_nrow(incomplete_data)
+  print(n_incomplete)
+  if(n_incomplete == 0){
+    print("NO MISSING VALUES, SKIPPING MODEL BUILDING")
+    return(sdf %>% dplyr::select(-dplyr::all_of("id")))
+  }
 
   # Step 3: Build regression formula
   formula_str <- paste0(target_col, " ~ ", paste(feature_cols, collapse = " + "))
