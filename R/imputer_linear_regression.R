@@ -35,19 +35,34 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   complete_data <- sdf %>%
     dplyr::filter(!is.na(!!rlang::sym(target_col)))
 
+  n_complete <- sparklyr::sdf_nrow(complete_data)
+  print(n_complete)
+
   incomplete_data <- sdf %>%
     dplyr::filter(is.na(!!rlang::sym(target_col)))
-
+  n_incomplete <- sparklyr::sdf_nrow(incomplete_data)
+  print(n_incomplete)
+  if(n_incomplete == 0){
+    print("NO MISSING VALUES, SKIPPING MODEL BUILDING")
+    return(sdf %>% dplyr::select(-dplyr::all_of("id")))
+  }
   print("DEBUGlinear: 3")
+
+  print("feature_cols")
+  print(feature_cols)
   # Step 3: Build regression formula
   formula_str <- paste0(target_col, " ~ ", paste(feature_cols, collapse = " + "))
   formula_obj <- stats::as.formula(formula_str)
+  print("formula_obj")
+  print(formula_obj)
+
   print("DEBUGlinear: 4")
   # Step 4: Build linear regression model on complete data
   lm_model <- complete_data %>%
     sparklyr::ml_linear_regression(formula = formula_obj,
                          elastic_net_param = elastic_net_param)
-
+  print("lm_model")
+  print(lm_model)
   print("DEBUGlinear: 5")
   # Step 5: Predict missing values
   predictions <- sparklyr::ml_predict(lm_model, incomplete_data) %>%
