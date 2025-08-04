@@ -28,7 +28,7 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   #Step 1: add temporary id
   sdf <- sdf %>% sparklyr::sdf_with_sequential_id()
   target_col_prev <- target_col_prev %>% sparklyr::sdf_with_sequential_id()
-  print(target_col_prev)
+  print(target_col_prev) # should have target col from previous iteration + id columns
   print("DEBUGlinear: 2")
   # Step 2: Split the data into complete and incomplete rows
   # Reminder: all non target columns will have been initialized
@@ -37,6 +37,7 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
 
   incomplete_data <- sdf %>%
     dplyr::filter(is.na(!!rlang::sym(target_col)))
+
   print("DEBUGlinear: 3")
   # Step 3: Build regression formula
   formula_str <- paste0(target_col, " ~ ", paste(feature_cols, collapse = " + "))
@@ -46,11 +47,14 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   lm_model <- complete_data %>%
     sparklyr::ml_linear_regression(formula = formula_obj,
                          elastic_net_param = elastic_net_param)
+
   print("DEBUGlinear: 5")
   # Step 5: Predict missing values
   predictions <- sparklyr::ml_predict(lm_model, incomplete_data) %>%
     sparklyr::sdf_with_sequential_id("pred_id")
+
   print(predictions)
+  # 3 additional columns : , id <dbl>, prediction <dbl>, pred_id <dbl>
   print("DEBUGlinear: 5.1")
   pred_residuals <- predictions %>%
     sparklyr::inner_join(target_col_prev, by = "id")
@@ -60,7 +64,10 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
     sparklyr::mutate(residuals = (prediction - !!rlang::sym(paste0(target_col,"_y")))^2)
   print(sd_res)
   print("DEBUGlinear: 5.3")
-  sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% collect()
+  sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% dplyr::collect()
+  # for a prediction on variable "alder", all other columns and :
+  # alder_x <int>, id <dbl>, prediction <dbl>, pred_id <dbl>, alder_y <int>, residuals <dbl>
+  print(sd_res)
   print("DEBUGlinear: 5.4")
   sd_res <- sqrt(sd_res[[1, 1]])
   print('sd_res')
@@ -76,10 +83,10 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   print(sparklyr::sdf_nrow(noise_sdf))
   print("DEBUGlinear: 5.6")
   #Join the noise and the prediction
-  predictions <- predictions %>% inner_join(noise_sdf, by="pred_id") %>%
-    dplyr::select(-all_of("pred_id")) %>%
+  predictions <- predictions %>% dplyr::inner_join(noise_sdf, by="pred_id") %>%
+    dplyr::select(-dplyr::all_of("pred_id")) %>%
     sparklyr::mutate(noisy_pred = prediction + noise) %>%
-    dplyr::select(-all_of(c("prediction","noise")))
+    dplyr::select(-dplyr::all_of(c("prediction","noise")))
   print("DEBUGlinear: 6")
   # Replace the NULL values with predictions
   incomplete_data <- predictions %>%
