@@ -256,10 +256,10 @@ sampler.spark <- function(sc,
     j <- 0
     for (var_j in var_names){
       j <- j + 1
-      cat(j,"/",num_vars,"Imputing variable", var_j,"using method ")
+      cat("\n",j,"/",num_vars,"Imputing variable", var_j,"using method ")
 
       method <- imp_methods[[var_j]]
-      cat(method,"\n")
+      cat(method)
 
       # Obtain the variables use to predict the missing values of variable j and create feature column
       label_col <- var_j # string object

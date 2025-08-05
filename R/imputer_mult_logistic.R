@@ -46,6 +46,11 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   formula_str <- paste0(target_col, " ~ ", paste(feature_cols, collapse = " + "))
   formula_obj <- stats::as.formula(formula_str)
 
+  cat("Checking for NULLs in complete_data:\n")
+  null_counts <- complete_data %>%
+    dplyr::summarise_all(~sum(is.na(.))) %>%
+    dplyr::collect()
+  print(null_counts)
   # Step 4: Build logistic regression model on complete data
   model <- complete_data %>%
     sparklyr::ml_logistic_regression(formula = formula_obj)
@@ -72,7 +77,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   classes <- colnames(predictions %>% dplyr::select(dplyr::starts_with("probability_"))) %>%
     sub(pattern = "probability_", replacement = "")
 
-  cat("LogReg - DEBUG: class names = ", classes)
+  cat("LogReg - DEBUG: class names = ", classes,"\n")
 
   # Step 3: Generate the cumulative probability columns:
   for (i in seq_along(classes)) {
