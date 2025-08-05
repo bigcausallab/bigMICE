@@ -60,7 +60,7 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
   # At this point , predictions$prediction holds the predicted values without taking into account uncertainty.
   # To take into account the predictive uncertainty, we need to extract the probabilities
   # Step 1: Generate random uniform values and add them to the sdf
-  n_missing <- predictions %>% count() %>% collect() %>% pull()
+  n_missing <- predictions %>% dplyr::count() %>% dplyr::collect() %>% dplyr::pull()
   runif_values <- sparklyr::sdf_runif(sc, n_missing,output_col = "runif") %>%
     sparklyr::sdf_with_sequential_id(id = "temp_id_runif")
 

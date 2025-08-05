@@ -46,22 +46,22 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   formula_str <- paste0(target_col, " ~ ", paste(feature_cols, collapse = " + "))
   formula_obj <- stats::as.formula(formula_str)
 
-  cat("Checking for NULLs in complete_data:\n")
-  print(complete_data, n=1000)
+  # cat("Checking for NULLs in complete_data:\n")
+  # print(complete_data, n=1000)
 
   # Step 4: Build logistic regression model on complete data
   model <- complete_data %>%
     sparklyr::ml_logistic_regression(formula = formula_obj)
 
-
   # Step 5: Predict missing values
   predictions <- sparklyr::ml_predict(model, incomplete_data)
-  #print(colnames(predictions))
 
+  print(colnames(predictions))
+  print(predictions)
   # At this point , predictions$prediction holds the predicted values without taking into account uncertainty.
   # To take into account the predictive uncertainty, we need to extract the probabilities
   # Step 1: Generate random uniform values and add them to the sdf
-  n_missing <- predictions %>% count() %>% collect() %>% pull()
+  n_missing <- predictions %>% dplyr::count() %>% dplyr::collect() %>% dplyr::pull()
   runif_values <- sparklyr::sdf_runif(sc, n_missing,output_col = "runif") %>%
     sparklyr::sdf_with_sequential_id(id = "temp_id_runif")
 
