@@ -47,10 +47,8 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   formula_obj <- stats::as.formula(formula_str)
 
   cat("Checking for NULLs in complete_data:\n")
-  null_counts <- complete_data %>%
-    dplyr::summarise_all(~sum(is.na(.))) %>%
-    dplyr::collect()
-  print(null_counts)
+  print(complete_data, n=1000)
+
   # Step 4: Build logistic regression model on complete data
   model <- complete_data %>%
     sparklyr::ml_logistic_regression(formula = formula_obj)
