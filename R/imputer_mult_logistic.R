@@ -114,13 +114,12 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   # Add prob_pred column using SQL expression:
   predictions <- predictions %>% dplyr::mutate(prob_pred = dplyr::sql(case_when_sql))
 
-  print("debug predictions")
-  print(predictions)
+  # print("debug predictions")
+  # print(predictions)
   # At this point, the column prob_pred contains the predictions that take into account the predictive uncertainty
 
-
-  # removing unused created columns (only need prediction)
-  pre_pred_cols <- c(colnames(incomplete_data),"prediction")
+  # removing unused created columns (only need prob_pred)
+  pre_pred_cols <- c(colnames(incomplete_data),"prob_pred")
   post_pred_cols <- colnames(predictions)
   extra_cols <- setdiff(post_pred_cols, pre_pred_cols)
   predictions <- predictions %>% dplyr::select(-dplyr::all_of(extra_cols))
@@ -130,7 +129,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   incomplete_data <- predictions %>%
     dplyr::select(-!!rlang::sym(target_col)) %>%  # Remove the original NULL column
     #dplyr::mutate(prediction = as.logical(prediction)) %>%
-    dplyr::rename(!!rlang::sym(target_col) := prediction)  # Rename prediction to target_col
+    dplyr::rename(!!rlang::sym(target_col) := prob_pred)  # Rename prediction to target_col
 
   print("debug incomplete")
   print(incomplete_data)
