@@ -52,12 +52,14 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   # Step 4: Build logistic regression model on complete data
   model <- complete_data %>%
     sparklyr::ml_logistic_regression(formula = formula_obj)
-
+  print("Before pred_data")
+  print(colnames(incomplete_data))
   # Step 5: Predict missing values
   prediction_data <- incomplete_data %>%
     dplyr::select(-!!rlang::sym(target_col))
   predictions <- sparklyr::ml_predict(model, prediction_data)
-
+  print("After pred_data")
+  print(colnames(incomplete_data))
   print(colnames(predictions))
   print(predictions)
   # At this point , predictions$prediction holds the predicted values without taking into account uncertainty.
@@ -110,7 +112,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
 
   # Add ELSE clause for safety (optional):
   case_when_sql <- paste0("CASE ", case_when_sql, " ELSE NULL END")
-  print(case_when_sql)
+  # print(case_when_sql)
   # Add prob_pred column using SQL expression:
   predictions <- predictions %>% dplyr::mutate(prob_pred = dplyr::sql(case_when_sql))
 
@@ -120,8 +122,10 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
 
   # removing unused created columns (only need prob_pred)
   pre_pred_cols <- c(colnames(incomplete_data),"prob_pred")
+  print("PRE")
   print(pre_pred_cols)
   post_pred_cols <- colnames(predictions)
+  print("POST")
   print(post_pred_cols)
   extra_cols <- setdiff(post_pred_cols, pre_pred_cols)
   predictions <- predictions %>% dplyr::select(-dplyr::all_of(extra_cols))
