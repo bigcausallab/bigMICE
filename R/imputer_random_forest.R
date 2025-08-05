@@ -39,7 +39,7 @@ impute_with_random_forest_regressor <- function(sc, sdf, target_col, feature_col
   n_incomplete <- sparklyr::sdf_nrow(incomplete_data)
   print(n_incomplete)
   if(n_incomplete == 0){
-    print("NO MISSING VALUES, SKIPPING MODEL BUILDING")
+    cat("- No missing values, skipping imputation")
     return(sdf %>% dplyr::select(-dplyr::all_of("id")))
   }
   # Step 3: Build regression formula

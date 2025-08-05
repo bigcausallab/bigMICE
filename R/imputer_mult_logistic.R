@@ -39,7 +39,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   n_incomplete <- sparklyr::sdf_nrow(incomplete_data)
 
   if(n_incomplete == 0){
-    print("NO MISSING VALUES, SKIPPING MODEL BUILDING")
+    cat("- No missing values, skipping imputation")
     return(sdf %>% dplyr::select(-dplyr::all_of("id")))
   }
   # Step 3: Build regression formula
@@ -55,8 +55,6 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   predictions <- sparklyr::ml_predict(model, incomplete_data)
   #print(colnames(predictions))
 
-
-
   # At this point , predictions$prediction holds the predicted values without taking into account uncertainty.
   # To take into account the predictive uncertainty, we need to extract the probabilities
   # Step 1: Generate random uniform values and add them to the sdf
@@ -71,7 +69,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
 
   # Step 2: Extract the class names from the probability columns
   # This step is done because the classes might not always be ordered numbers
-  classes <- colnames(predictions %>% select(starts_with("probability_"))) %>%
+  classes <- colnames(predictions %>% dplyr::select(dplyr::starts_with("probability_"))) %>%
     sub(pattern = "probability_", replacement = "")
 
   cat("LogReg - DEBUG: class names = ", classes)
@@ -107,10 +105,12 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
 
   # Add ELSE clause for safety (optional):
   case_when_sql <- paste0("CASE ", case_when_sql, " ELSE NULL END")
-
+  print(case_when_sql)
   # Add prob_pred column using SQL expression:
   predictions <- predictions %>% dplyr::mutate(prob_pred = dplyr::sql(case_when_sql))
 
+  print("debug predictions")
+  print(predictions)
   # At this point, the column prob_pred contains the predictions that take into account the predictive uncertainty
 
 

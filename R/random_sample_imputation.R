@@ -121,7 +121,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
   # Process each specified column
   for (col in cols_to_process) {
     i <- i + 1
-    cat("\nVariable", i, "out of", num_cols)
+    cat("\n", i, "/", num_cols)
 
     cat(":", col, "- ")
 
@@ -145,7 +145,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
       cat("No missing values or no observed values to sample from")
       next
     }
-    cat("Sampling", n_missing, "values\n")
+    cat("Sampling", n_missing, "values")
 
     frac_boosted <- n_missing/n_observed + 5/100 #sdf_sample is not precise 100% of the time so I oversample then truncate. 5% extra is enough to work most of the time
     sampled_values <- observed_data %>%

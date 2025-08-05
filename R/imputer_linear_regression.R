@@ -39,7 +39,7 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   n_incomplete <- sparklyr::sdf_nrow(incomplete_data)
 
   if(n_incomplete == 0){
-    print("NO MISSING VALUES, SKIPPING MODEL BUILDING")
+    cat("- No missing values, skipping imputation")
     return(sdf %>% dplyr::select(-dplyr::all_of("id")))
   }
 

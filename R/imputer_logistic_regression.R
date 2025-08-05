@@ -42,7 +42,7 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
   n_incomplete <- sparklyr::sdf_nrow(incomplete_data)
   print(n_incomplete)
   if(n_incomplete == 0){
-    print("NO MISSING VALUES, SKIPPING MODEL BUILDING")
+    cat("- No missing values, skipping imputation")
     return(sdf %>% dplyr::select(-dplyr::all_of("id")))
   }
 
@@ -56,9 +56,6 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
 
   # Step 5: Predict missing values
   predictions <- sparklyr::ml_predict(model, incomplete_data)
-
-
-
 
   # At this point , predictions$prediction holds the predicted values without taking into account uncertainty.
   # To take into account the predictive uncertainty, we need to extract the probabilities

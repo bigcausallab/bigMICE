@@ -41,7 +41,7 @@ mice.spark <- function(data,
                        checkpointing = TRUE,
                        ...) {
 
-  cat("\nUsing bigMICE version 0.1.55 \n")
+  cat("\nUsing bigMICE version 0.1.6 \n")
   if (!is.na(seed)) set.seed(seed)
 
   # check form of data and m
