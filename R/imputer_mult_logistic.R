@@ -120,12 +120,15 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
 
   # removing unused created columns (only need prob_pred)
   pre_pred_cols <- c(colnames(incomplete_data),"prob_pred")
+  print(pre_pred_cols)
   post_pred_cols <- colnames(predictions)
+  print(post_pred_cols)
   extra_cols <- setdiff(post_pred_cols, pre_pred_cols)
   predictions <- predictions %>% dplyr::select(-dplyr::all_of(extra_cols))
   print("debug predictions")
   print(predictions)
   # Replace the NULL values with predictions
+  print(colnames(predictions))
   incomplete_data <- predictions %>%
     dplyr::select(-!!rlang::sym(target_col)) %>%  # Remove the original NULL column
     #dplyr::mutate(prediction = as.logical(prediction)) %>%
