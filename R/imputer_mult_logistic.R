@@ -25,6 +25,8 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
     stop("feature_cols must be a character vector of column names")
   }
   #Step 1: add temporary id
+  print("DEBUG SDF PreID")
+  print(sdf)
   sdf <- sdf %>% sparklyr::sdf_with_sequential_id()
 
   # Step 2: Split the data into complete and incomplete rows
@@ -35,7 +37,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   incomplete_data <- sdf %>%
     dplyr::filter(is.na(!!rlang::sym(target_col)))
   n_incomplete <- sparklyr::sdf_nrow(incomplete_data)
-  print(n_incomplete)
+
   if(n_incomplete == 0){
     print("NO MISSING VALUES, SKIPPING MODEL BUILDING")
     return(sdf %>% dplyr::select(-dplyr::all_of("id")))
