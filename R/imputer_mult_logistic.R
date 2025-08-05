@@ -25,8 +25,8 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
     stop("feature_cols must be a character vector of column names")
   }
   #Step 1: add temporary id
-  print("DEBUG SDF PreID")
-  print(sdf)
+  # print("DEBUG SDF PreID")
+  # print(sdf)
   sdf <- sdf %>% sparklyr::sdf_with_sequential_id()
 
   # Step 2: Split the data into complete and incomplete rows
@@ -52,8 +52,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   # Step 4: Build logistic regression model on complete data
   model <- complete_data %>%
     sparklyr::ml_logistic_regression(formula = formula_obj)
-  print("Before pred_data")
-  print(colnames(incomplete_data))
+
   # Step 5: Predict missing values
   prediction_data <- incomplete_data %>%
     dplyr::select(-!!rlang::sym(target_col))
@@ -134,7 +133,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   # Replace the NULL values with predictions
   print(colnames(predictions))
   incomplete_data <- predictions %>%
-    dplyr::select(-!!rlang::sym(target_col)) %>%  # Remove the original NULL column
+    #dplyr::select(-!!rlang::sym(target_col)) %>%  # Remove the original NULL column -> now done before model building
     #dplyr::mutate(prediction = as.logical(prediction)) %>%
     dplyr::rename(!!rlang::sym(target_col) := prob_pred)  # Rename prediction to target_col
 
