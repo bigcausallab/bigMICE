@@ -25,8 +25,6 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
     stop("feature_cols must be a character vector of column names")
   }
   #Step 1: add temporary id
-  # print("DEBUG SDF PreID")
-  # print(sdf)
   sdf <- sdf %>% sparklyr::sdf_with_sequential_id()
 
   # Step 2: Split the data into complete and incomplete rows
@@ -46,21 +44,16 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   formula_str <- paste0(target_col, " ~ ", paste(feature_cols, collapse = " + "))
   formula_obj <- stats::as.formula(formula_str)
 
-  # cat("Checking for NULLs in complete_data:\n")
-  # print(complete_data, n=1000)
-
   # Step 4: Build logistic regression model on complete data
   model <- complete_data %>%
     sparklyr::ml_logistic_regression(formula = formula_obj)
 
   # Step 5: Predict missing values
+  # Remove target_col from the prediction data ( caused crash with NULL values when using string class names)
   prediction_data <- incomplete_data %>%
     dplyr::select(-!!rlang::sym(target_col))
   predictions <- sparklyr::ml_predict(model, prediction_data)
-  print("After pred_data")
-  print(colnames(incomplete_data))
-  print(colnames(predictions))
-  print(predictions)
+
   # At this point , predictions$prediction holds the predicted values without taking into account uncertainty.
   # To take into account the predictive uncertainty, we need to extract the probabilities
   # Step 1: Generate random uniform values and add them to the sdf
@@ -93,7 +86,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
       dplyr::mutate(!!cumprob_col := dplyr::sql(expr))
   }
   # Step 4: Add the probabilistic prediction using runif and cumprob_ columns
-  # Again here, use of SQL expressions. I used the help of generative AI so I don't fully understand that part, but it looks like it is working.
+  # Again here, use of SQL expressions.
 
   # Build case_when conditions as SQL snippets:
   case_when_sql <- paste0(
@@ -109,36 +102,26 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
     }
   }
 
-  # Add ELSE clause for safety (optional):
+  # Add ELSE clause for safety:
   case_when_sql <- paste0("CASE ", case_when_sql, " ELSE NULL END")
-  # print(case_when_sql)
-  # Add prob_pred column using SQL expression:
+
+  # Add prob_pred column using the SQL expression:
   predictions <- predictions %>% dplyr::mutate(prob_pred = dplyr::sql(case_when_sql))
 
-  # print("debug predictions")
-  # print(predictions)
-  # At this point, the column prob_pred contains the predictions that take into account the predictive uncertainty
+  # At this point, the column prob_pred in the predictions sdf contains the predictions that take into account the predictive uncertainty
 
   # removing unused created columns (only need prob_pred)
   pre_pred_cols <- c(colnames(incomplete_data),"prob_pred")
-  print("PRE")
-  print(pre_pred_cols)
   post_pred_cols <- colnames(predictions)
-  print("POST")
-  print(post_pred_cols)
   extra_cols <- setdiff(post_pred_cols, pre_pred_cols)
   predictions <- predictions %>% dplyr::select(-dplyr::all_of(extra_cols))
-  print("debug predictions")
-  print(predictions)
+
   # Replace the NULL values with predictions
-  print(colnames(predictions))
   incomplete_data <- predictions %>%
     #dplyr::select(-!!rlang::sym(target_col)) %>%  # Remove the original NULL column -> now done before model building
     #dplyr::mutate(prediction = as.logical(prediction)) %>%
-    dplyr::rename(!!rlang::sym(target_col) := prob_pred)  # Rename prediction to target_col
+    dplyr::rename(!!rlang::sym(target_col) := prob_pred)  # Rename prediction to the target_col name before union
 
-  print("debug incomplete")
-  print(incomplete_data)
   # Step 6: Combine complete and imputed data
   result <- complete_data %>%
     dplyr::union_all(incomplete_data)
@@ -147,7 +130,5 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
     dplyr::arrange(id) %>%
     dplyr::select(-id)
 
-  print("debug return")
-  print(result)
   return(result)
 }
