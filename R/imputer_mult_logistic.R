@@ -54,7 +54,9 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
     sparklyr::ml_logistic_regression(formula = formula_obj)
 
   # Step 5: Predict missing values
-  predictions <- sparklyr::ml_predict(model, incomplete_data)
+  prediction_data <- incomplete_data %>%
+    dplyr::select(-!!rlang::sym(target_col))
+  predictions <- sparklyr::ml_predict(model, prediction_data)
 
   print(colnames(predictions))
   print(predictions)
