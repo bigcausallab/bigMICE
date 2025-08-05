@@ -4,7 +4,7 @@
 \alias{init_with_random_samples}
 \title{Random Sample Imputation function}
 \usage{
-init_with_random_samples(sc, sdf, column = NULL)
+init_with_random_samples(sc, sdf, column = NULL, checkpointing = TRUE)
 }
 \arguments{
 \item{sc}{A Spark connection}
@@ -12,6 +12,8 @@ init_with_random_samples(sc, sdf, column = NULL)
 \item{sdf}{A Spark DataFrame}
 
 \item{column}{The column(s) to impute. If NULL, all columns will be imputed}
+
+\item{checkpointing}{Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.}
 }
 \value{
 The Spark DataFrame with missing values imputed

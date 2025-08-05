@@ -18,6 +18,7 @@
 #' @param printFlag A boolean, whether to print debug information
 #' @param seed An integer, the seed to use for reproducibility
 #' @param imp_init A Spark DataFrame, the original data with missing values, but with initial imputation (by random sampling or mean/median/mode imputation). Can be set to avoid re-running the initialisation step. Otherwise, the function will perform the initialisation step using the MeMoMe function.
+#' @param checkpointing Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.
 #' @param ... Additional arguments to be passed to the function. TBD
 #' @return A list containing the Rubin's statistics for the model parameters, the per-imputation statistics, the imputation statistics, and the model parameters.
 #' @export
@@ -37,6 +38,7 @@ mice.spark <- function(data,
                        printFlag = TRUE,
                        seed = NA,
                        imp_init = NULL,
+                       checkpointing = TRUE,
                        ...) {
 
   cat("\nUsing bigMICE version 0.1.55 \n")
@@ -57,47 +59,6 @@ mice.spark <- function(data,
 
   #TODO : add support for column parameter in initialisation
 
-  # Dictionnary to infer initialization method based on variable type
-  # Should be one of (mean, mode, median, none), and be used as input of MeMoMe function
-  # init_dict <- c("Binary" = "mode",
-  #                "Nominal" = "mode",
-  #                "Ordinal" = "mode",
-  #                "Code (don't impute)" = "none", # LopNr, Unit_code etc...
-  #                "Continuous_int" = "median",
-  #                "Continuous_float" = "mean",
-  #                "smalldatetime" = "none",
-  #                "String" = "none", #TBD
-  #                "Count" = "median", #TBD
-  #                "Semi-continuous" = "none", #TBD
-  #                "Else", "none")
-  #
-  # init_modes <- replace(variable_types, variable_types %in% names(init_dict), init_dict[variable_types])
-  # names(init_modes) <- cols
-  # # print("**DEBUG**: init_modes:")
-  # # print(init_modes)
-  #
-  # cat("\nStarting initialisation\n")
-  # # print(" ")
-  #
-  # # print(length(init_modes))
-  # # print(sdf_ncol(data))
-  # #
-  # init_start_time <- proc.time()
-  # if(is.null(imp_init)){
-  #   imp_init <- impute_with_MeMoMe(sc = sc,
-  #                                  sdf = data,
-  #                                  column = NULL, #TODO: add support for this
-  #                                  impute_mode = init_modes)
-  # }else{
-  #   print("Using initial imputation provided manually, I hope it is correct")
-  #   imp_init <- imp_init # User provided initiale imputation
-  # }
-  #
-  # init_end_time <- proc.time()
-  # init_elapsed <- (init_end_time-init_start_time)['elapsed']
-  # cat("\nInitalisation time:", init_elapsed)
-  # TODO : Add elapse time to the result dataframe (and create result dataframe)
-
   ### Rubin Rules Stats INIT###
   # Get the formula for the model
   formula_obj <- analysis_formula
@@ -108,16 +69,14 @@ mice.spark <- function(data,
   # List to store per-imputation information
   imputation_stats <- vector("list", m)
 
-
-
   # FOR EACH IMPUTATION SET i = 1, ..., m
   for (i in 1:m) {
     cat("\nStarting initialisation\n")
 
     init_start_time <- proc.time()
 
-    imp_init <- init_with_random_samples(sc, data, column = NULL)
-    imp_init <- imp_init %>% select(-all_of("temp_row_id"))
+    imp_init <- init_with_random_samples(sc, data, column = NULL, checkpointing = checkpointing)
+    imp_init <- imp_init %>% dplyr::select(-dplyr::all_of("temp_row_id"))
     # Check that the initialised data does not contain any missing values
     init_end_time <- proc.time()
     init_elapsed <- (init_end_time-init_start_time)['elapsed']
@@ -136,7 +95,8 @@ mice.spark <- function(data,
                          fromto = c(from, to),
                          var_types = variable_types,
                          predictorMatrix = predictorMatrix,
-                         printFlag = printFlag)
+                         printFlag = printFlag,
+                         checkpointing = checkpointing)
 
     imp_end_time <- proc.time()
     imp_elapsed <- (imp_end_time-imp_start_time)['elapsed']
@@ -247,6 +207,7 @@ mice.spark <- function(data,
 #' @param var_types A named character vector, the variable types of the columns in the data.
 #' @param printFlag A boolean, whether to print debug information.
 #' @param predictorMatrix A matrix, the predictor matrix to use for the imputation. TBD
+#' @param checkpointing Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.
 #' @return The Spark DataFrame with missing values imputed for all variables
 #' @export
 #' @examples
@@ -257,6 +218,7 @@ sampler.spark <- function(sc,
                           fromto,
                           var_types,
                           predictorMatrix = NULL,
+                          checkpointing,
                           printFlag){
 
 
@@ -307,7 +269,7 @@ sampler.spark <- function(sc,
 
       # DEFAULT: all other variables
       feature_cols <- setdiff(var_names, label_col)
-      # remove the features with "none" imputation method (lpopNr, Unit_code, etc... )
+      # remove the features with "none" imputation method
       feature_cols <- feature_cols[which(imp_methods[feature_cols] != "none")]
 
       # NON-DEFAULT: If predictorMatrix is provided, use it to select the features
@@ -315,13 +277,10 @@ sampler.spark <- function(sc,
 
         #Fetch the user-defined predictors for the label var_j
         UD_predictors <- colnames(predictorMatrix)[predictorMatrix[label_col, ]]
-
         #Check if the predictors are in the data
         if(length(UD_predictors) > 0){
           #If they are, use them as features
           feature_cols <- intersect(feature_cols, UD_predictors)
-
-
         }else{
           #If not, use stop
           cat(paste("The user-defined predictors for variable", label_col, "are not in the data or no predictors left after using user-defined predictors. Skipping Imputation for this variable.\n"))
@@ -340,14 +299,11 @@ sampler.spark <- function(sc,
       j_df <- result %>%
         sparklyr::select(-label_col) %>%
         cbind(data %>% sparklyr::select(dplyr::all_of(label_col)))
-      #cat("colnames j-df", colnames(j_df))
-      # To calculate the residuals (linear method only for now), we need to keep the previous values in label_col
-      #print("1")
+
       label_col_prev <- result %>% sparklyr::select(label_col)
-      print("DEBUG: label_col_prev")
-      print(label_col_prev)
+
       # Could this be avoided by passing in result to the impute function ? less select actions ?
-      #print("2")
+
       result <- switch(method,
          "Logistic" = impute_with_logistic_regression(sc, j_df, label_col, feature_cols),
          "Mult_Logistic" = impute_with_mult_logistic_regression(sc, j_df, label_col, feature_cols),
@@ -359,15 +315,12 @@ sampler.spark <- function(sc,
          "none" = j_df, # don't impute this variable
          "Invalid method"  # Default case, should never be reached
       ) # end of switch block
-      print("DEBUG: post switch")
     } # end of var_j loop (each variable) (1 iteration)
 
-    # Checkpoint here ?
-    print("checkpointing...")
-    result <- sparklyr::sdf_checkpoint(result)
-
+    if(checkpointing){
+      result <- sparklyr::sdf_checkpoint(result)
+    }
   } # end of k loop (iterations)
-
   return(result)
 } # end of sampler.spark function
 
@@ -393,13 +346,14 @@ sampler.spark <- function(sc,
 #' @param printFlag A boolean, whether to print debug information
 #' @param seed An integer, the seed to use for reproducibility
 #' @param imp_init A Spark DataFrame, the original data with missing values, but with initial imputation (by random sampling or mean/median/mode imputation). Can be set to avoid re-running the initialisation step. Otherwise, the function will perform the initialisation step using the MeMoMe function.
+#' @param checkpointing Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.
 #' @param ... Additional arguments to be passed to the function. TBD
 #' @return A list containing the Rubin's statistics for the model parameters, the per-imputation statistics, the imputation statistics, and the model parameters.
 #' @export
 #' @examples
 #' #TBD
 
-mice.spark.plus <- function(data, #data + 10% missing
+mice.spark.plus <- function(data, #data + X% missing
                        data_true, #data without missing
                        sc,
                        variable_types, # Used for initialization and method selection
@@ -414,15 +368,11 @@ mice.spark.plus <- function(data, #data + 10% missing
                        printFlag = TRUE,
                        seed = NA,
                        imp_init = NULL,
+                       checkpointing = TRUE,
                        ...) {
 
   cat("\nUsing bigMICE version 0.1.6 \n")
   if (!is.na(seed)) set.seed(seed)
-
-  # check form of data and m
-  #data <- check.spark.dataform(data)
-
-  #m <- check.m(m)
 
   from <- 1
   to <- from + maxit - 1
@@ -476,42 +426,29 @@ mice.spark.plus <- function(data, #data + 10% missing
     init_start_time <- proc.time()
 
     imp_init <- init_with_random_samples(sc, data, column = NULL)
-    imp_init <- imp_init %>% select(-all_of("temp_row_id"))
+    imp_init <- imp_init %>% dplyr::select(-dplyr::all_of("temp_row_id"))
     # Check that the initialised data does not contain any missing values
     init_end_time <- proc.time()
     init_elapsed <- (init_end_time-init_start_time)['elapsed']
     cat("Initalisation time:", init_elapsed)
 
     cat("\nImputation: ", i, "\n")
-
     # Run the imputation algorithm
-    cat("Starting imputation")
 
     imp_start_time <- proc.time()
-
     imp <- sampler.spark(sc = sc,
                          data = data,
                          imp_init = imp_init,
                          fromto = c(from, to),
                          var_types = variable_types,
                          predictorMatrix = predictorMatrix,
-                         printFlag = printFlag)
+                         printFlag = printFlag,
+                         checkpointing = checkpointing)
 
     imp_end_time <- proc.time()
     imp_elapsed <- (imp_end_time-imp_start_time)['elapsed']
     cat("\nImputation time:", imp_elapsed,".\n")
 
-    # Save imputation to dataframe ? Maybe only the last one ?
-
-    # Compute user-provided analysis on the fly on the imputed data ?
-
-    # Calculate Rubin Rules statistics
-    # Fit model on imputed data
-    cat("Fitting model on imputed data\n")
-    #print(colnames(imp))
-    # Clearing the extra columns created by the imputer (Bug, needs to be fixed)
-    # Need to look at each imputer to see which one returns the extra cols
-    # Or does the model created also create new cols in the data ?
     pre_pred_cols <- c(colnames(data))
     post_pred_cols <- colnames(imp)
     extra_cols <- setdiff(post_pred_cols, pre_pred_cols)

@@ -36,11 +36,11 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
 
     # Separate observed and missing values while maintaining original order
     observed_data <- sdf %>%
-      dplyr::select(all_of(c(col, "temp_row_id"))) %>%
+      dplyr::select(dplyr::all_of(c(col, "temp_row_id"))) %>%
       dplyr::filter(!is.na(!!rlang::sym(col)))
 
     missing_data <- sdf %>%
-      dplyr::select(all_of(c(col, "temp_row_id"))) %>%
+      dplyr::select(dplyr::all_of(c(col, "temp_row_id"))) %>%
       dplyr::filter(is.na(!!rlang::sym(col)))
 
     # Calculate sampling fraction
@@ -119,13 +119,13 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
     print(sampled_values %>% head(5))
 
     # Add sequential ID to missing_data for joining
-    missing_data_with_id <- missing_data %>% sdf_with_sequential_id(id = "id")
+    missing_data_with_id <- missing_data %>% sparklyr::sdf_with_sequential_id(id = "id")
 
     # Replace NA values with sampled values
     imputed_data <- missing_data_with_id %>%
-      left_join(sampled_values %>% rename(value_new = !!rlang::sym(col)), by = "id") %>%
-      mutate(!!rlang::sym(col) := coalesce(value_new, !!rlang::sym(col))) %>%
-      select(-id, -value_new)
+      dplyr::left_join(sampled_values %>% dplyr::rename(value_new = !!rlang::sym(col)), by = "id") %>%
+      dplyr::mutate(!!rlang::sym(col) := dplyr::coalesce(value_new, !!rlang::sym(col))) %>%
+      dplyr::select(-id, -value_new)
 
     # Union with observed data and sort by temp_row_id
     new_col_data <- imputed_data %>%
@@ -134,8 +134,8 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
 
     # Update the column in sdf_with_id
     # Since new_col_data is a Spark DataFrame, we join and replace
-    sdf <- sdf %>% select(-!!rlang::sym(col)) %>%  # Drop old column
-      left_join(new_col_data %>% select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
+    sdf <- sdf %>% dplyr::select(-!!rlang::sym(col)) %>%  # Drop old column
+      dplyr::left_join(new_col_data %>% dplyr::select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
 
   } #End of for loop over columns
 
@@ -152,11 +152,12 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
 #' @param sc A Spark connection
 #' @param sdf A Spark DataFrame
 #' @param column The column(s) to impute. If NULL, all columns will be imputed
+#' @param checkpointing Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.
 #' @return The Spark DataFrame with missing values imputed
 #' @export
 #' @examples
 #' #TBD
-init_with_random_samples<- function(sc, sdf, column = NULL) {
+init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE) {
 
   cols_to_process <- if (!is.null(column)) column else colnames(sdf)
   # Add sequential ID to preserve original order
@@ -218,17 +219,20 @@ init_with_random_samples<- function(sc, sdf, column = NULL) {
 
     # Replace NA values with sampled values
     imputed_data <- missing_data %>%
-      left_join(sampled_values %>% rename(value_new = !!rlang::sym(col)), by = "id") %>%
-      mutate(!!rlang::sym(col) := coalesce(value_new, !!rlang::sym(col))) %>%
-      select(-id, -value_new)
+      dplyr::left_join(sampled_values %>% dplyr::rename(value_new = !!rlang::sym(col)), by = "id") %>%
+      dplyr::mutate(!!rlang::sym(col) := dplyr::coalesce(value_new, !!rlang::sym(col))) %>%
+      dplyr::select(-id, -value_new)
 
     new_col_data <- imputed_data %>% dplyr::union(observed_data)
 
     sdf <- sdf %>%
-      select(-!!rlang::sym(col)) %>%  # Drop old column
-      left_join(new_col_data %>% select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
+      dplyr::select(-!!rlang::sym(col)) %>%  # Drop old column
+      dplyr::left_join(new_col_data %>% dplyr::select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
 
-    sdf <- sdf_checkpoint(sdf)
+    if(checkpointing){
+      sdf <- sparklyr::sdf_checkpoint(sdf)
+    }
+
 
   } #End of for loop over columns
   sdf %>% dplyr::arrange(temp_row_id) %>% dplyr::select(-"temp_row_id")

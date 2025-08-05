@@ -20,6 +20,7 @@ mice.spark.plus(
   printFlag = TRUE,
   seed = NA,
   imp_init = NULL,
+  checkpointing = TRUE,
   ...
 )
 }
@@ -53,6 +54,8 @@ mice.spark.plus(
 \item{seed}{An integer, the seed to use for reproducibility}
 
 \item{imp_init}{A Spark DataFrame, the original data with missing values, but with initial imputation (by random sampling or mean/median/mode imputation). Can be set to avoid re-running the initialisation step. Otherwise, the function will perform the initialisation step using the MeMoMe function.}
+
+\item{checkpointing}{Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.}
 
 \item{...}{Additional arguments to be passed to the function. TBD}
 }
