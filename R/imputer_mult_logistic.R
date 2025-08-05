@@ -119,13 +119,16 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   post_pred_cols <- colnames(predictions)
   extra_cols <- setdiff(post_pred_cols, pre_pred_cols)
   predictions <- predictions %>% dplyr::select(-dplyr::all_of(extra_cols))
-
+  print("debug predictions")
+  print(predictions)
   # Replace the NULL values with predictions
   incomplete_data <- predictions %>%
     dplyr::select(-!!rlang::sym(target_col)) %>%  # Remove the original NULL column
     #dplyr::mutate(prediction = as.logical(prediction)) %>%
     dplyr::rename(!!rlang::sym(target_col) := prediction)  # Rename prediction to target_col
 
+  print("debug incomplete")
+  print(incomplete_data)
   # Step 6: Combine complete and imputed data
   result <- complete_data %>%
     dplyr::union_all(incomplete_data)
@@ -133,6 +136,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   result <- result %>%
     dplyr::arrange(id) %>%
     dplyr::select(-id)
+
   print("debug return")
   print(result)
   return(result)

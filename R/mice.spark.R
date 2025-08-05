@@ -84,9 +84,6 @@ mice.spark <- function(data,
 
     cat("\nImputation: ", i, "\n")
 
-    # Run the imputation algorithm
-    cat("Starting imputation")
-
     imp_start_time <- proc.time()
 
     imp <- sampler.spark(sc = sc,
@@ -253,13 +250,13 @@ sampler.spark <- function(sc,
   result <- imp_init
 
   for (k in from:to){
-    cat("\n iteration: ", k)
+    cat("\n iteration: ", k,"\n")
 
     # For each variable j in the data
     j <- 0
     for (var_j in var_names){
       j <- j + 1
-      cat("\n",j,"/",num_vars,"Imputing variable", var_j,"using method ")
+      cat(j,"/",num_vars,"Imputing variable", var_j,"using method ")
 
       method <- imp_methods[[var_j]]
       cat(method,"\n")
