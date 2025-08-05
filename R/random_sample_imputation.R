@@ -47,9 +47,7 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
     n_missing <- sparklyr::sdf_nrow(missing_data)
     n_observed <- sparklyr::sdf_nrow(observed_data)
 
-    print("Fraction of missing values:")
     fraction_missing <- n_missing / (n_missing + n_observed)
-    print(fraction_missing)
 
     # Skip if no missing or no observed values
     if (n_missing == 0 || n_observed == 0) {
@@ -57,50 +55,6 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
       next
     }
     cat("Sampling", n_missing, "values\n")
-
-    # Sample n_missing values from the observed values
-    # The following approach is more accurate, but exponentially slower with sample size
-    # 50k samples -> 40s, 500k samples -> No results after 15min +
-    # start_time <- Sys.time()
-    # sampled_values <- observed_data %>%
-    #   dplyr::select(!!rlang::sym(col)) %>%  # Only need the column to sample
-    #   dplyr::sample_n(size = n_missing, replace = TRUE) %>%
-    #   sparklyr::sdf_with_sequential_id(id = "id")
-    # end_time <- Sys.time()
-    # cat("Time taken to sample values:", end_time - start_time, "\n")
-    # n_sampled <- sparklyr::sdf_nrow(sampled_values)
-    # cat(" n_sampled", n_sampled,"\n")
-
-
-    # The following approach is inaccurate (around 1% error) and inconsistent, fraction is not precise and results in sometimes less sampled values than needed.
-    # This could be due to float precision error ?
-
-    # start_time <- Sys.time()
-    # sampled_values2 <- observed_data %>%
-    #   dplyr::select(!!rlang::sym(col)) %>%
-    #   sparklyr::sdf_sample(fraction = n_missing/n_observed, replacement = TRUE) %>%
-    #   utils::head(n_missing) %>%
-    #   sparklyr::sdf_with_sequential_id(id = "id")
-    # end_time <- Sys.time()
-    # cat("Time taken to sample values2:", end_time - start_time, "\n")
-    # n_sampled2 <- sparklyr::sdf_nrow(sampled_values2)
-    # cat(" n_sampled2", n_sampled2,"\n")
-    #
-    # start_time <- Sys.time()
-    # sampled_values3 <- observed_data %>%
-    #   dplyr::select(!!rlang::sym(col)) %>%
-    #   sparklyr::sdf_sample(fraction = n_missing/n_observed, replacement = TRUE) %>%
-    #   utils::head(n_missing) %>%
-    #   sparklyr::sdf_with_sequential_id(id = "id")
-    # end_time <- Sys.time()
-    # cat("Time taken to sample values3:", end_time - start_time, "\n")
-    # n_sampled3 <- sparklyr::sdf_nrow(sampled_values3)
-    # cat(" n_sampled3", n_sampled3,"\n")
-
-    # Above, n_sampled_2 and n_sampled_3 are not always equal to n_missing, nor to each other
-
-
-    # Solution: Oversample by 5% and then take the first n_missing rows. It is fast and accurate: 14M samples -> 2.4s , 100% accurate during testing
 
     #start_time <- Sys.time()
     frac_boosted <- n_missing/n_observed + 5/100
@@ -138,9 +92,9 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
       dplyr::left_join(new_col_data %>% dplyr::select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
 
   } #End of for loop over columns
-
   # Remove the temporary ID column and return
   sdf %>% dplyr::arrange(temp_row_id) %>% dplyr::select(-"temp_row_id")
+  return(sdf)
 }
 
 
@@ -193,7 +147,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
     }
     cat("Sampling", n_missing, "values\n")
 
-    frac_boosted <- n_missing/n_observed + 5/100 #sdf_sample is not precise 100% of the time so I oversample then truncate.
+    frac_boosted <- n_missing/n_observed + 5/100 #sdf_sample is not precise 100% of the time so I oversample then truncate. 5% extra is enough to work most of the time
     sampled_values <- observed_data %>%
       dplyr::select(!!rlang::sym(col)) %>%
       sparklyr::sdf_sample(fraction = frac_boosted, replacement = TRUE) %>%
@@ -201,20 +155,16 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
       sparklyr::sdf_with_sequential_id()
 
     n_sampled_values <- sparklyr::sdf_nrow(sampled_values)
-    #cat("n_missing", n_missing,"\n")
-    #cat("n_sampled", n_sampled_values,"\n")
+
     # While oversampling works most of the time, it still sometimes misses, so I resample until it is accurate
     while(n_sampled_values != n_missing){
-      print("undersampled, resampling...")
-
+      cat(" sampling failed, resampling...\n")
       sampled_values <- observed_data %>%
         dplyr::select(!!rlang::sym(col)) %>%
         sparklyr::sdf_sample(fraction = frac_boosted, replacement = TRUE) %>%
         utils::head(n_missing) %>%
         sparklyr::sdf_with_sequential_id()
-
       n_sampled_values <- sparklyr::sdf_nrow(sampled_values)
-
     }
 
     # Replace NA values with sampled values
@@ -227,12 +177,12 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
 
     sdf <- sdf %>%
       dplyr::select(-!!rlang::sym(col)) %>%  # Drop old column
-      dplyr::left_join(new_col_data %>% dplyr::select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
+      dplyr::left_join(new_col_data %>%
+      dplyr::select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
 
     if(checkpointing){
       sdf <- sparklyr::sdf_checkpoint(sdf)
     }
-
 
   } #End of for loop over columns
   sdf %>% dplyr::arrange(temp_row_id) %>% dplyr::select(-"temp_row_id")
