@@ -66,8 +66,8 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
 
   predictions <- predictions %>%
     sparklyr::sdf_with_sequential_id(id = "temp_id_runif") %>%
-    left_join(runif_values, by = "temp_id_runif") %>%
-    select(-temp_id_runif)
+    dplyr::left_join(runif_values, by = "temp_id_runif") %>%
+    dplyr::select(-temp_id_runif)
 
   # Step 2: Extract the class names from the probability columns
   # This step is done because the classes might not always be ordered numbers
@@ -86,7 +86,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
     expr <- paste(prob_cols, collapse = " + ")
 
     predictions <- predictions %>%
-      mutate(!!cumprob_col := sql(expr))
+      dplyr::mutate(!!cumprob_col := dplyr::sql(expr))
   }
   # Step 4: Add the probabilistic prediction using runif and cumprob_ columns
   # Again here, use of SQL expressions. I used the help of generative AI so I don't fully understand that part, but it looks like it is working.
@@ -109,7 +109,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   case_when_sql <- paste0("CASE ", case_when_sql, " ELSE NULL END")
 
   # Add prob_pred column using SQL expression:
-  predictions <- predictions %>% mutate(prob_pred = sql(case_when_sql))
+  predictions <- predictions %>% dplyr::mutate(prob_pred = dplyr::sql(case_when_sql))
 
   # At this point, the column prob_pred contains the predictions that take into account the predictive uncertainty
 
@@ -133,6 +133,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   result <- result %>%
     dplyr::arrange(id) %>%
     dplyr::select(-id)
-
+  print("debug return")
+  print(result)
   return(result)
 }
