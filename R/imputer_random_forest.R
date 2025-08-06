@@ -37,7 +37,7 @@ impute_with_random_forest_regressor <- function(sc, sdf, target_col, feature_col
   incomplete_data <- sdf %>%
     dplyr::filter(is.na(!!rlang::sym(target_col)))
   n_incomplete <- sparklyr::sdf_nrow(incomplete_data)
-  print(n_incomplete)
+  #print(n_incomplete)
   if(n_incomplete == 0){
     cat("- No missing values, skipping imputation")
     return(sdf %>% dplyr::select(-dplyr::all_of("id")))
@@ -55,12 +55,12 @@ impute_with_random_forest_regressor <- function(sc, sdf, target_col, feature_col
     sparklyr::sdf_with_sequential_id("pred_id")
 
   pred_residuals <- predictions %>%
-    sparklyr::inner_join(target_col_prev, by = "id")
+    dplyr::inner_join(target_col_prev, by = "id")
 
   sd_res <- pred_residuals %>%
     sparklyr::mutate(residuals = (prediction - !!rlang::sym(paste0(target_col,"_y")))^2)
 
-  sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% collect()
+  sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% dplyr::collect()
   sd_res <- sqrt(sd_res[[1, 1]])
 
   # Add noise to prediction to account for uncertainty
@@ -69,10 +69,10 @@ impute_with_random_forest_regressor <- function(sc, sdf, target_col, feature_col
     sparklyr::sdf_with_sequential_id("pred_id")
 
   #Join the noise and the prediction
-  predictions <- predictions %>% inner_join(noise_sdf, by="pred_id") %>%
-    dplyr::select(-all_of("pred_id")) %>%
+  predictions <- predictions %>% dplyr::inner_join(noise_sdf, by="pred_id") %>%
+    dplyr::select(-dplyr::all_of("pred_id")) %>%
     sparklyr::mutate(noisy_pred = prediction + noise) %>%
-    dplyr::select(-all_of(c("prediction","noise")))
+    dplyr::select(-dplyr::all_of(c("prediction","noise")))
 
   # Replace the NULL values with predictions
   incomplete_data <- predictions %>%
@@ -123,9 +123,9 @@ impute_with_random_forest_classifier <- function(sc, sdf, target_col, feature_co
   incomplete_data <- sdf %>%
     dplyr::filter(is.na(!!rlang::sym(target_col)))
   n_incomplete <- sparklyr::sdf_nrow(incomplete_data)
-  print(n_incomplete)
+  #print(n_incomplete)
   if(n_incomplete == 0){
-    print("NO MISSING VALUES, SKIPPING MODEL BUILDING")
+    print("no missing values, skipping imputation..")
     return(sdf %>% dplyr::select(-dplyr::all_of("id")))
   }
   # Step 3: Build regression formula
@@ -143,18 +143,18 @@ impute_with_random_forest_classifier <- function(sc, sdf, target_col, feature_co
   # At this point , predictions$prediction holds the predicted values without taking into account uncertainty.
   # To take into account the predictive uncertainty, we need to extract the probabilities
   # Step 1: Generate random uniform values and add them to the sdf
-  n_missing <- predictions %>% count() %>% collect() %>% pull()
+  n_missing <- predictions %>% dplyr::count() %>% dplyr::collect() %>% dplyr::pull()
   runif_values <- sparklyr::sdf_runif(sc, n_missing,output_col = "runif") %>%
     sparklyr::sdf_with_sequential_id(id = "temp_id_runif")
 
   predictions <- predictions %>%
     sparklyr::sdf_with_sequential_id(id = "temp_id_runif") %>%
-    left_join(runif_values, by = "temp_id_runif") %>%
-    select(-temp_id_runif)
+    dplyr::left_join(runif_values, by = "temp_id_runif") %>%
+    dplyr::select(-temp_id_runif)
 
   # Step 2: Extract the class names from the probability columns
   # This step is done because the classes might not always be ordered numbers
-  classes <- colnames(predictions %>% select(starts_with("probability_"))) %>%
+  classes <- colnames(predictions %>% dplyr::select(dplyr::starts_with("probability_"))) %>%
     sub(pattern = "probability_", replacement = "")
 
   cat("LogReg - DEBUG: class names = ", classes)
@@ -169,7 +169,7 @@ impute_with_random_forest_classifier <- function(sc, sdf, target_col, feature_co
     expr <- paste(prob_cols, collapse = " + ")
 
     predictions <- predictions %>%
-      mutate(!!cumprob_col := sql(expr))
+      dplyr::mutate(!!cumprob_col := dplyr::sql(expr))
   }
   # Step 4: Add the probabilistic prediction using runif and cumprob_ columns
   # Again here, use of SQL expressions. I used the help of generative AI so I don't fully understand that part, but it looks like it is working.
@@ -192,7 +192,7 @@ impute_with_random_forest_classifier <- function(sc, sdf, target_col, feature_co
   case_when_sql <- paste0("CASE ", case_when_sql, " ELSE NULL END")
 
   # Add prob_pred column using SQL expression:
-  predictions <- predictions %>% mutate(prob_pred = sql(case_when_sql))
+  predictions <- predictions %>% dplyr::mutate(prob_pred = dplyr::sql(case_when_sql))
 
   # At this point, the column prob_pred contains the predictions that take into account the predictive uncertainty
 
