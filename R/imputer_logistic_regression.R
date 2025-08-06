@@ -40,7 +40,7 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
   incomplete_data <- sdf %>%
     dplyr::filter(is.na(!!rlang::sym(target_col)))
   n_incomplete <- sparklyr::sdf_nrow(incomplete_data)
-  print(n_incomplete)
+  #print(n_incomplete)
   if(n_incomplete == 0){
     cat("- No missing values, skipping imputation")
     return(sdf %>% dplyr::select(-dplyr::all_of("id")))
@@ -56,6 +56,7 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
 
   # Step 5: Predict missing values
   predictions <- sparklyr::ml_predict(model, incomplete_data)
+  # Note to self: If getting a stringNULL error when using string label, remove target_col from incomplete data (see mult_logistic) and comment line 126  dplyr::select(-!!rlang::sym(target_col)) %>%
 
   # At this point , predictions$prediction holds the predicted values without taking into account uncertainty.
   # To take into account the predictive uncertainty, we need to extract the probabilities
@@ -66,15 +67,15 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
 
   predictions <- predictions %>%
     sparklyr::sdf_with_sequential_id(id = "temp_id_runif") %>%
-    left_join(runif_values, by = "temp_id_runif") %>%
-    select(-temp_id_runif)
+    dplyr::left_join(runif_values, by = "temp_id_runif") %>%
+    dplyr::select(-temp_id_runif)
 
   # Step 2: Extract the class names from the probability columns
   # This step is done because the classes might not always be ordered numbers
-  classes <- colnames(predictions %>% select(starts_with("probability_"))) %>%
+  classes <- colnames(predictions %>% dplyr::select(dplyr::starts_with("probability_"))) %>%
     sub(pattern = "probability_", replacement = "")
 
-  cat("LogReg - DEBUG: class names = ", classes)
+  #cat("LogReg - DEBUG: class names = ", classes)
 
   # Step 3: Generate the cumulative probability columns:
   for (i in seq_along(classes)) {
@@ -86,7 +87,7 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
     expr <- paste(prob_cols, collapse = " + ")
 
     predictions <- predictions %>%
-      mutate(!!cumprob_col := sql(expr))
+      dplyr::mutate(!!cumprob_col := dplyr::sql(expr))
   }
   # Step 4: Add the probabilistic prediction using runif and cumprob_ columns
   # Again here, use of SQL expressions. I used the help of generative AI so I don't fully understand that part, but it looks like it is working.
@@ -109,7 +110,7 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
   case_when_sql <- paste0("CASE ", case_when_sql, " ELSE NULL END")
 
   # Add prob_pred column using SQL expression:
-  predictions <- predictions %>% mutate(prob_pred = sql(case_when_sql))
+  predictions <- predictions %>% dplyr::mutate(prob_pred = dplyr::sql(case_when_sql))
 
   # At this point, the column prob_pred contains the predictions that take into account the predictive uncertainty
 

@@ -71,7 +71,7 @@ impute_with_mult_logistic_regression <- function(sc, sdf, target_col, feature_co
   classes <- colnames(predictions %>% dplyr::select(dplyr::starts_with("probability_"))) %>%
     sub(pattern = "probability_", replacement = "")
 
-  cat("LogReg - DEBUG: class names = ", classes,"\n")
+  #cat("LogReg - DEBUG: class names = ", classes,"\n")
 
   # Step 3: Generate the cumulative probability columns:
   for (i in seq_along(classes)) {
