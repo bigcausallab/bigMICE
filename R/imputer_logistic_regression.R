@@ -9,9 +9,39 @@
 #' @param target_col The column with missing values to impute
 #' @param feature_cols The columns to use as features in the logistic regression model. These columns should not have missing values.
 #' @return The Spark DataFrame with missing values imputed in the target column
-#' @export
 #' @examples
-#' #TBD
+#' # Create a dataset with missing boolean values
+#' library(sparklyr)
+#' library(dplyr)
+#' 
+#' # Connect to Spark
+#' sc <- spark_connect(master = "local")
+#' 
+#' # Create sample data with missing values in a boolean column 'has_degree'
+#' sample_data <- data.frame(
+#'   has_degree = c(1, NA, 0, NA, 1, 0),
+#'   age = c(25, 35, 30, 28, 45, 22),
+#'   income = c(50000, 75000, 45000, 52000, 90000, 35000),
+#'   years_experience = c(2, 8, 5, 3, 15, 1)
+#' )
+#' 
+#' # Copy to Spark DataFrame
+#' sdf <- copy_to(sc, sample_data, "sample_data")
+#' 
+#' # Impute missing boolean values using age, income, and experience
+#' imputed_sdf <- impute_with_logistic_regression(
+#'   sc = sc,
+#'   sdf = sdf,
+#'   target_col = "has_degree",
+#'   feature_cols = c("age", "income", "years_experience")
+#' )
+#' 
+#' # View results
+#' imputed_sdf %>% collect()
+#' 
+#' # Clean up
+#' spark_disconnect(sc)
+#' @export
 
 impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
   # FOR BOOLEAN VARIABLES ONLY (0/1)
