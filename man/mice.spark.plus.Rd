@@ -66,5 +66,40 @@ A list containing the Rubin's statistics for the model parameters, the per-imput
 This function imputes missing values in a Spark DataFrame using MICE (Multiple Imputation by Chained Equations) algorithm. Additionally, it allows to look at the imputed values to see if they are reasonable and measure the uncertainty of the imputation.
 }
 \examples{
-#TBD
+# Example for mice.spark.plus function
+# Create complete data (without extra missing values)
+complete_data <- data.frame(
+  outcome = c(1, 0, 1, 1, 0, 0),
+  age = c(25, 30, 35, 28, 45, 32),
+  income = c(50000, 60000, 70000, 55000, 80000, 52000),
+  education = c("High", "Medium", "High", "Low", "Low", "Medium")
+)
+
+# Copy complete data to Spark
+sdf_complete <- copy_to(sc, complete_data, "complete_data")
+
+# Create where_missing indicator (logical vector)
+where_missing <- c(FALSE, TRUE, TRUE, FALSE, TRUE, TRUE)  # Indicates artificially missing
+
+# Run MICE+
+mice_plus_result <- mice.spark.plus(
+  data = sdf,  # Data with missing values
+  data_true = sdf_complete,  # Complete data
+  sc = sc,
+  variable_types = variable_types,
+  analysis_formula = analysis_formula,
+  where_missing = where_missing,
+  m = 3,
+  maxit = 2,
+  printFlag = TRUE,
+  seed = 123,
+  checkpointing = FALSE
+)
+
+# View results including known missings
+mice_plus_result$rubin_stats
+mice_plus_result$known_missings[[1]] \%>\% collect()  # First imputation
+
+# Clean up
+spark_disconnect(sc)
 }

@@ -60,5 +60,48 @@ A list containing the Rubin's statistics for the model parameters, the per-imput
 This function imputes missing values in a Spark DataFrame using MICE (Multiple Imputation by Chained Equations) algorithm.
 }
 \examples{
-#TBD
+# Example for mice.spark function
+library(sparklyr)
+library(dplyr)
+
+# Connect to Spark
+sc <- spark_connect(master = "local")
+
+# Create sample data with missing values
+sample_data <- data.frame(
+  outcome = c(1, 0, NA, 1, NA, 0),
+  age = c(25, NA, 35, 28, 45, NA),
+  income = c(50000, 60000, NA, 55000, 80000, 52000),
+  education = c("High", "Medium", "High", NA, "Low", "Medium")
+)
+
+# Copy to Spark DataFrame
+sdf <- copy_to(sc, sample_data, "sample_data")
+
+# Define variable types
+variable_types <- c(
+  outcome = "Binary",
+  age = "Continuous_int", 
+  income = "Continuous_int",
+  education = "Nominal"
+)
+
+# Define analysis formula
+analysis_formula <- outcome ~ age + income + education
+
+# Run MICE imputation
+mice_result <- mice.spark(
+  data = sdf,
+  sc = sc,
+  variable_types = variable_types,
+  analysis_formula = analysis_formula,
+  m = 3,  # Number of imputations
+  maxit = 2,  # Number of iterations
+  printFlag = TRUE,
+  seed = 123,
+  checkpointing = FALSE  # Set to TRUE if HDFS is available
+)
+
+# View Rubin's pooled statistics
+mice_result$rubin_stats
 }
