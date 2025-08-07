@@ -14,10 +14,10 @@
 #' # Example for Random Forest Regressor
 #' library(sparklyr)
 #' library(dplyr)
-#' 
+#'
 #' # Connect to Spark
 #' sc <- spark_connect(master = "local")
-#' 
+#'
 #' # Create sample data with missing continuous values in 'price'
 #' sample_data <- data.frame(
 #'   price = c(250000, NA, 180000, NA, 320000, 195000),
@@ -26,15 +26,15 @@
 #'   sqft = c(1500, 900, 800, 1200, 2000, 850),
 #'   age = c(10, 15, 25, 8, 5, 20)
 #' )
-#' 
+#'
 #' # Copy to Spark DataFrame
 #' sdf <- copy_to(sc, sample_data, "sample_data")
-#' 
+#'
 #' # Create previous iteration data (for residual calculation)
-#' sdf_prev <- sdf %>% 
+#' sdf_prev <- sdf %>%
 #'   mutate(price_prev = ifelse(is.na(price), 200000, price)) %>%
 #'   select(price_prev)
-#' 
+#'
 #' # Impute missing house prices using Random Forest regression
 #' imputed_sdf <- impute_with_random_forest_regressor(
 #'   sc = sc,
@@ -43,10 +43,10 @@
 #'   feature_cols = c("bedrooms", "bathrooms", "sqft", "age"),
 #'   target_col_prev = sdf_prev
 #' )
-#' 
+#'
 #' # View results
 #' imputed_sdf %>% collect()
-#' 
+#'
 #' # Clean up
 #' spark_disconnect(sc)
 
@@ -140,7 +140,7 @@ impute_with_random_forest_regressor <- function(sc, sdf, target_col, feature_col
 #' # Example for Random Forest Classifier
 #' library(sparklyr)
 #' library(dplyr)
-#' 
+#'
 #' # Connect to Spark
 #' sc <- spark_connect(master = "local")
 #' # Create sample data with missing categorical values in 'neighborhood'
@@ -151,10 +151,10 @@ impute_with_random_forest_regressor <- function(sc, sdf, target_col, feature_col
 #'   schools_nearby = c(5, 3, 4, 1, 4, 6),
 #'   crime_rate = c(2.1, 1.5, 1.2, 0.8, 1.8, 2.3)
 #' )
-#' 
+#'
 #' # Copy to Spark DataFrame
 #' sdf2 <- copy_to(sc, sample_data2, "sample_data2")
-#' 
+#'
 #' # Impute missing neighborhood types using Random Forest classification
 #' imputed_sdf2 <- impute_with_random_forest_classifier(
 #'   sc = sc,
@@ -162,10 +162,10 @@ impute_with_random_forest_regressor <- function(sc, sdf, target_col, feature_col
 #'   target_col = "neighborhood",
 #'   feature_cols = c("price", "commute_time", "schools_nearby", "crime_rate")
 #' )
-#' 
+#'
 #' # View results
 #' imputed_sdf2 %>% collect()
-#' 
+#'
 #' # Clean up
 #' spark_disconnect(sc)
 
@@ -223,8 +223,6 @@ impute_with_random_forest_classifier <- function(sc, sdf, target_col, feature_co
   # This step is done because the classes might not always be ordered numbers
   classes <- colnames(predictions %>% dplyr::select(dplyr::starts_with("probability_"))) %>%
     sub(pattern = "probability_", replacement = "")
-
-  cat("LogReg - DEBUG: class names = ", classes)
 
   # Step 3: Generate the cumulative probability columns:
   for (i in seq_along(classes)) {
