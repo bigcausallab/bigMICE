@@ -30,5 +30,42 @@ The Spark DataFrame with missing values imputed in the target column
 This function imputes missing values in a Spark DataFrame using Random Forest regression.
 }
 \examples{
-#TBD
+# Example for Random Forest Regressor
+library(sparklyr)
+library(dplyr)
+
+# Connect to Spark
+sc <- spark_connect(master = "local")
+
+# Create sample data with missing continuous values in 'price'
+sample_data <- data.frame(
+  price = c(250000, NA, 180000, NA, 320000, 195000),
+  bedrooms = c(3, 2, 2, 3, 4, 2),
+  bathrooms = c(2, 1, 1, 2, 3, 1),
+  sqft = c(1500, 900, 800, 1200, 2000, 850),
+  age = c(10, 15, 25, 8, 5, 20)
+)
+
+# Copy to Spark DataFrame
+sdf <- copy_to(sc, sample_data, "sample_data")
+
+# Create previous iteration data (for residual calculation)
+sdf_prev <- sdf \%>\% 
+  mutate(price_prev = ifelse(is.na(price), 200000, price)) \%>\%
+  select(price_prev)
+
+# Impute missing house prices using Random Forest regression
+imputed_sdf <- impute_with_random_forest_regressor(
+  sc = sc,
+  sdf = sdf,
+  target_col = "price",
+  feature_cols = c("bedrooms", "bathrooms", "sqft", "age"),
+  target_col_prev = sdf_prev
+)
+
+# View results
+imputed_sdf \%>\% collect()
+
+# Clean up
+spark_disconnect(sc)
 }

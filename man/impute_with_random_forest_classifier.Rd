@@ -22,5 +22,35 @@ The Spark DataFrame with missing values imputed in the target column
 This function imputes missing values in a Spark DataFrame using Random Forest classification.
 }
 \examples{
-#TBD
+# Example for Random Forest Classifier
+library(sparklyr)
+library(dplyr)
+
+# Connect to Spark
+sc <- spark_connect(master = "local")
+# Create sample data with missing categorical values in 'neighborhood'
+sample_data2 <- data.frame(
+  neighborhood = c("Downtown", NA, "Suburbs", "Rural", NA, "Downtown"),
+  price = c(450000, 280000, 320000, 180000, 380000, 420000),
+  commute_time = c(10, 25, 35, 60, 15, 12),
+  schools_nearby = c(5, 3, 4, 1, 4, 6),
+  crime_rate = c(2.1, 1.5, 1.2, 0.8, 1.8, 2.3)
+)
+
+# Copy to Spark DataFrame
+sdf2 <- copy_to(sc, sample_data2, "sample_data2")
+
+# Impute missing neighborhood types using Random Forest classification
+imputed_sdf2 <- impute_with_random_forest_classifier(
+  sc = sc,
+  sdf = sdf2,
+  target_col = "neighborhood",
+  feature_cols = c("price", "commute_time", "schools_nearby", "crime_rate")
+)
+
+# View results
+imputed_sdf2 \%>\% collect()
+
+# Clean up
+spark_disconnect(sc)
 }
