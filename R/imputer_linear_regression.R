@@ -11,10 +11,47 @@
 #' @param elastic_net_param The elastic net parameter for the linear regression model. Default is 0 (ridge regression)
 #' @param target_col_prev the target column at the previous iteration. Used to calculate residuals.
 #' @return The Spark DataFrame with missing values imputed in the target column
-#' @export
 #' @examples
-#' #TBD
-
+#' # Create a simple dataset with missing values
+#' library(sparklyr)
+#' library(dplyr)
+#' 
+#' # Connect to Spark
+#' sc <- spark_connect(master = "local")
+#' 
+#' # Create sample data with some missing values in 'age'
+#' sample_data <- data.frame(
+#'   age = c(25, NA, 35, NA, 45, 30),
+#'   income = c(50000, 60000, 70000, 55000, 80000, 52000),
+#'   education_years = c(16, 18, 20, 17, 22, 16),
+#'   experience = c(3, 8, 12, 5, 18, 7)
+#' )
+#' 
+#' # Copy to Spark DataFrame
+#' sdf <- copy_to(sc, sample_data, "sample_data")
+#' 
+#' # Create previous iteration data (for residual calculation)
+#' # In practice, this would be from a previous imputation step
+#' sdf_prev <- sdf %>% 
+#'   mutate(age_prev = ifelse(is.na(age), 30, age)) %>%  # Simple initial imputation
+#'   select(age_prev)
+#' 
+#' # Impute missing age values using income, education_years, and experience
+#' imputed_sdf <- impute_with_linear_regression(
+#'   sc = sc,
+#'   sdf = sdf,
+#'   target_col = "age",
+#'   feature_cols = c("income", "education_years", "experience"),
+#'   elastic_net_param = 0,  # Ridge regression
+#'   target_col_prev = sdf_prev
+#' )
+#' 
+#' # View results
+#' imputed_sdf %>% collect()
+#' 
+#' # Clean up
+#' spark_disconnect(sc)
+#' @export
 impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, elastic_net_param = 0,target_col_prev) {
 
   # Step 0; Validate inputs
