@@ -23,7 +23,50 @@
 #' @return A list containing the Rubin's statistics for the model parameters, the per-imputation statistics, the imputation statistics, and the model parameters.
 #' @export
 #' @examples
-#' #TBD
+#' # Example for mice.spark function
+#' library(sparklyr)
+#' library(dplyr)
+#' 
+#' # Connect to Spark
+#' sc <- spark_connect(master = "local")
+#' 
+#' # Create sample data with missing values
+#' sample_data <- data.frame(
+#'   outcome = c(1, 0, NA, 1, NA, 0),
+#'   age = c(25, NA, 35, 28, 45, NA),
+#'   income = c(50000, 60000, NA, 55000, 80000, 52000),
+#'   education = c("High", "Medium", "High", NA, "Low", "Medium")
+#' )
+#' 
+#' # Copy to Spark DataFrame
+#' sdf <- copy_to(sc, sample_data, "sample_data")
+#' 
+#' # Define variable types
+#' variable_types <- c(
+#'   outcome = "Binary",
+#'   age = "Continuous_int", 
+#'   income = "Continuous_int",
+#'   education = "Nominal"
+#' )
+#' 
+#' # Define analysis formula
+#' analysis_formula <- outcome ~ age + income + education
+#' 
+#' # Run MICE imputation
+#' mice_result <- mice.spark(
+#'   data = sdf,
+#'   sc = sc,
+#'   variable_types = variable_types,
+#'   analysis_formula = analysis_formula,
+#'   m = 3,  # Number of imputations
+#'   maxit = 2,  # Number of iterations
+#'   printFlag = TRUE,
+#'   seed = 123,
+#'   checkpointing = FALSE  # Set to TRUE if HDFS is available
+#' )
+#' 
+#' # View Rubin's pooled statistics
+#' mice_result$rubin_stats
 
 mice.spark <- function(data,
                        sc,
@@ -196,7 +239,36 @@ mice.spark <- function(data,
 #' @return The Spark DataFrame with missing values imputed for all variables
 #' @export
 #' @examples
-#' #TBD
+#' # Example for sampler.spark function
+#' # Define variable types for sampler
+#' var_types <- c(
+#'   age = "Continuous_int",
+#'   income = "Continuous_int", 
+#'   education = "Nominal"
+#' )
+#' 
+#' # Create initial imputation (simple mean/mode)
+#' imp_init <- sdf %>%
+#'   mutate(
+#'     age = ifelse(is.na(age), 35, age),
+#'     income = ifelse(is.na(income), 60000, income),
+#'     education = ifelse(is.na(education), "Medium", education)
+#'   )
+#' 
+#' # Run sampler
+#' sampled_data <- sampler.spark(
+#'   sc = sc,
+#'   data = sdf,
+#'   imp_init = imp_init,
+#'   fromto = c(1, 2),
+#'   var_types = var_types,
+#'   printFlag = TRUE,
+#'   checkpointing = FALSE
+#' )
+#' 
+#' # View results
+#' sampled_data %>% collect()
+
 sampler.spark <- function(sc,
                           data,
                           imp_init,
@@ -336,7 +408,42 @@ sampler.spark <- function(sc,
 #' @return A list containing the Rubin's statistics for the model parameters, the per-imputation statistics, the imputation statistics, and the model parameters.
 #' @export
 #' @examples
-#' #TBD
+#' # Example for mice.spark.plus function
+#' # Create complete data (without extra missing values)
+#' complete_data <- data.frame(
+#'   outcome = c(1, 0, 1, 1, 0, 0),
+#'   age = c(25, 30, 35, 28, 45, 32),
+#'   income = c(50000, 60000, 70000, 55000, 80000, 52000),
+#'   education = c("High", "Medium", "High", "Low", "Low", "Medium")
+#' )
+#' 
+#' # Copy complete data to Spark
+#' sdf_complete <- copy_to(sc, complete_data, "complete_data")
+#' 
+#' # Create where_missing indicator (logical vector)
+#' where_missing <- c(FALSE, TRUE, TRUE, FALSE, TRUE, TRUE)  # Indicates artificially missing
+#' 
+#' # Run MICE+
+#' mice_plus_result <- mice.spark.plus(
+#'   data = sdf,  # Data with missing values
+#'   data_true = sdf_complete,  # Complete data
+#'   sc = sc,
+#'   variable_types = variable_types,
+#'   analysis_formula = analysis_formula,
+#'   where_missing = where_missing,
+#'   m = 3,
+#'   maxit = 2,
+#'   printFlag = TRUE,
+#'   seed = 123,
+#'   checkpointing = FALSE
+#' )
+#' 
+#' # View results including known missings
+#' mice_plus_result$rubin_stats
+#' mice_plus_result$known_missings[[1]] %>% collect()  # First imputation
+#' 
+#' # Clean up
+#' spark_disconnect(sc)
 
 mice.spark.plus <- function(data, #data + X% missing
                        data_true, #data without missing
