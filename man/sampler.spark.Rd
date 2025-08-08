@@ -41,31 +41,31 @@ This function is the core of the MICE algorithm. It iteratively imputes missing 
 \examples{
 # Example for sampler.spark function
 # Define variable types for sampler
-var_types <- c(
-  age = "Continuous_int",
-  income = "Continuous_int", 
-  education = "Nominal"
-)
+#var_types <- c(
+ # age = "Continuous_int",
+ # income = "Continuous_int",
+ # education = "Nominal"
+#)
 
 # Create initial imputation (simple mean/mode)
-imp_init <- sdf \%>\%
-  mutate(
-    age = ifelse(is.na(age), 35, age),
-    income = ifelse(is.na(income), 60000, income),
-    education = ifelse(is.na(education), "Medium", education)
-  )
+#imp_init <- sdf \%>\%
+ # mutate(
+ #   age = ifelse(is.na(age), 35, age),
+ #   income = ifelse(is.na(income), 60000, income),
+ #   education = ifelse(is.na(education), "Medium", education)
+ # )
 
 # Run sampler
-sampled_data <- sampler.spark(
-  sc = sc,
-  data = sdf,
-  imp_init = imp_init,
-  fromto = c(1, 2),
-  var_types = var_types,
-  printFlag = TRUE,
-  checkpointing = FALSE
-)
+#sampled_data <- sampler.spark(
+ # sc = sc,
+ # data = sdf,
+ # imp_init = imp_init,
+ # fromto = c(1, 2),
+ # var_types = var_types,
+ # printFlag = TRUE,
+ # checkpointing = FALSE
+#)
 
 # View results
-sampled_data \%>\% collect()
+#sampled_data \%>\% collect()
 }

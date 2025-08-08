@@ -23,35 +23,35 @@ This function imputes missing values in a Spark DataFrame using Multinomial Logi
 }
 \examples{
 # Create a dataset with missing categorical values
-library(sparklyr)
-library(dplyr)
+#library(sparklyr)
+#library(dplyr)
 
 # Connect to Spark
-sc <- spark_connect(master = "local")
+#sc <- spark_connect(master = "local")
 
 # Create sample data with missing values in 'job_category'
-sample_data <- data.frame(
-  job_category = c("Manager", NA, "Analyst", "Developer", NA, "Manager"),
-  years_experience = c(8, 3, 5, 2, 6, 10),
-  salary = c(85000, 45000, 55000, 50000, 65000, 95000),
-  education_level = c(3, 2, 3, 2, 3, 4),  # 1=High School, 2=Bachelor, 3=Master, 4=PhD
-  age = c(35, 28, 30, 25, 32, 42)
-)
+#sample_data <- data.frame(
+# job_category = c("Manager", NA, "Analyst", "Developer", NA, "Manager"),
+# years_experience = c(8, 3, 5, 2, 6, 10),
+# salary = c(85000, 45000, 55000, 50000, 65000, 95000),
+# education_level = c(3, 2, 3, 2, 3, 4),  # 1=High School, 2=Bachelor, 3=Master, 4=PhD
+# age = c(35, 28, 30, 25, 32, 42)
+#)
 
 # Copy to Spark DataFrame
-sdf <- copy_to(sc, sample_data, "sample_data")
+#sdf <- copy_to(sc, sample_data, "sample_data")
 
 # Impute missing job categories using experience, salary, education, and age
-imputed_sdf <- impute_with_mult_logistic_regression(
-  sc = sc,
-  sdf = sdf,
-  target_col = "job_category",
-  feature_cols = c("years_experience", "salary", "education_level", "age")
-)
+#imputed_sdf <- impute_with_mult_logistic_regression(
+# sc = sc,
+# sdf = sdf,
+# target_col = "job_category",
+# feature_cols = c("years_experience", "salary", "education_level", "age")
+#)
 
 # View results
-imputed_sdf \%>\% collect()
+#imputed_sdf \%>\% collect()
 
 # Clean up
-spark_disconnect(sc)
+#spark_disconnect(sc)
 }

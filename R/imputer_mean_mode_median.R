@@ -12,46 +12,46 @@
 #' @return The Spark DataFrame with missing values imputed
 #' @examples
 #' # Create a dataset with various types of missing values
-#' library(sparklyr)
-#' library(dplyr)
-#' 
+#' #library(sparklyr)
+#' #library(dplyr)
+#'
 #' # Connect to Spark
-#' sc <- spark_connect(master = "local")
-#' 
+#' #sc <- spark_connect(master = "local")
+#'
 #' # Create sample data with missing values in different columns
-#' sample_data <- data.frame(
-#'   age = c(25, NA, 35, 28, NA, 45),
-#'   salary = c(50000, 60000, NA, 55000, 80000, NA),
-#'   department = c("Sales", NA, "IT", "Sales", "HR", "IT"),
-#'   rating = c(4.2, 3.8, NA, 4.5, 3.9, NA)
-#' )
-#' 
+#' #sample_data <- data.frame(
+#' #  age = c(25, NA, 35, 28, NA, 45),
+#' #  salary = c(50000, 60000, NA, 55000, 80000, NA),
+#' #  department = c("Sales", NA, "IT", "Sales", "HR", "IT"),
+#' #  rating = c(4.2, 3.8, NA, 4.5, 3.9, NA)
+#' #)
+#'
 #' # Copy to Spark DataFrame
-#' sdf <- copy_to(sc, sample_data, "sample_data")
-#' 
+#' #sdf <- copy_to(sc, sample_data, "sample_data")
+#'
 #' # Impute different columns using different methods
-#' imputed_sdf <- impute_with_MeMoMe(
-#'   sc = sc,
-#'   sdf = sdf,
-#'   column = c("age", "salary", "department", "rating"),
-#'   impute_mode = c("median", "mean", "mode", "mean"),
-#'   printFlags = TRUE
-#' )
-#' 
+#' #imputed_sdf <- impute_with_MeMoMe(
+#' #  sc = sc,
+#' #  sdf = sdf,
+#' #  column = c("age", "salary", "department", "rating"),
+#' #  impute_mode = c("median", "mean", "mode", "mean"),
+#' #  printFlags = TRUE
+#' #)
+#'
 #' # View results
-#' imputed_sdf %>% collect()
-#' 
+#' #imputed_sdf %>% collect()
+#'
 #' # Example 2: Impute only specific columns
-#' partial_imputed_sdf <- impute_with_MeMoMe(
-#'   sc = sc,
-#'   sdf = sdf,
-#'   column = c("age", "salary"),
-#'   impute_mode = c("mean", "median"),
-#'   printFlags = FALSE
-#' )
-#' 
+#' #partial_imputed_sdf <- impute_with_MeMoMe(
+#' #  sc = sc,
+#' #  sdf = sdf,
+#' #  column = c("age", "salary"),
+#' #  impute_mode = c("mean", "median"),
+#' #  printFlags = FALSE
+#' #)
+#'
 #' # Clean up
-#' spark_disconnect(sc)
+#' #spark_disconnect(sc)
 #' @export
 
 impute_with_MeMoMe  <- function(sc, sdf, column = NULL, impute_mode, printFlags = TRUE) {
