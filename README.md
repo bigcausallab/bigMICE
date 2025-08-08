@@ -1,5 +1,5 @@
 <h1>
-  <img src="images/bigMicelogo.webp" alt="Logo" width="40" height="40">
+  <img src="images/bigMicelogo.webp" alt="Logo" width="100" height="100">
   bigMice
 </h1>
 
