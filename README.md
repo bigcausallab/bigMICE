@@ -1,5 +1,9 @@
 # bigMice
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/hugo-morvan/bigMice/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hugo-morvan/bigMice/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 bigMice is an R package based on the `sparklyr` library, designed for handling large datasets with multiple imputation using an efficient and scalable approach.
 
 ## Setup and recommendations
