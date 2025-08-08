@@ -1,4 +1,7 @@
-# bigMice
+<h1>
+  <img src="images/bigMiceLogo.png" alt="Logo" width="40" height="40">
+  bigMice
+</h1>
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/hugo-morvan/bigMice/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hugo-morvan/bigMice/actions/workflows/R-CMD-check.yaml)
