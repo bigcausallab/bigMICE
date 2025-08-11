@@ -26,6 +26,14 @@ options(timeout = 6000)
 library(sparklyr)
 spark_install(version="4.0.0")
 ```
+
+To check that the correct combination of Spark and sparklyr have been installed, use the following two commands:
+```r
+sparklyr::spark_installed_versions()
+utils::packageVersion("sparklyr")
+```
+
+
 ### Hadoop
 It is **strongly recommended** to also install Hadoop to have access to a HDFS (Hadoop Distributed File System) directory when using the package. This allows for checkpointing which extends the capabilities of the package. Here is an article on [how to install Hadoop on Windows](https://medium.com/analytics-vidhya/hadoop-on-windows-eb322f520168). [needs more resources].
 
@@ -96,5 +104,11 @@ imputation_results <- bigMice::mice.spark(data = sdf,
                                              m = 1,
                                          maxit = 2,
                                  checkpointing = FALSE)
+
+imputation_results$rubin_stats
+
+imputation_results$model_params
+
+imputation_results$imputation_stats
 ```
 
