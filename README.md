@@ -12,7 +12,8 @@ bigMice is an R package based on the `sparklyr` library, designed for handling l
 ## Setup and recommendations
 
 ### Spark and sparklyr
-Setting up the environment (run once in a new R project) 
+
+(Optional) Setting up an environment (run once in a new R project) 
 ```r
 install.packages("renv")
 library(renv)
