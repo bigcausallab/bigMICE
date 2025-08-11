@@ -123,7 +123,7 @@ mice.spark <- function(data,
     # Check that the initialised data does not contain any missing values
     init_end_time <- proc.time()
     init_elapsed <- (init_end_time-init_start_time)['elapsed']
-    cat("Initalisation time:", init_elapsed)
+    cat("\nInitalisation time:", init_elapsed)
 
     cat("\nImputation: ", i, "\n")
 
@@ -156,7 +156,7 @@ mice.spark <- function(data,
     print(model)
     # Store model coefficients
     model_params[[i]] <- model$coefficients
-    print(model$coefficients)
+    #print(model$coefficients)
     # Create per-imputation summary for this iteration
     imp_summary <- list(
       imputation_number = i,
