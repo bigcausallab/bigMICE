@@ -171,18 +171,18 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
       n_sampled_values <- sparklyr::sdf_nrow(sampled_values)
     }
 
-    # Replace NA values with sampled values
-    imputed_data <- missing_data %>%
+    # Create imputed values with temp_row_id for direct join
+    imputed_values <- missing_data %>%
       dplyr::left_join(sampled_values %>% dplyr::rename(value_new = !!rlang::sym(col)), by = "id") %>%
-      dplyr::mutate(!!rlang::sym(col) := dplyr::coalesce(value_new, !!rlang::sym(col))) %>%
-      dplyr::select(-id, -value_new)
+      dplyr::select(temp_row_id, imputed_value = value_new)
 
-    new_col_data <- imputed_data %>% dplyr::union(observed_data)
-
+    # Update sdf in place using coalesce (much more efficient)
     sdf <- sdf %>%
-      dplyr::select(-!!rlang::sym(col)) %>%  # Drop old column
-      dplyr::left_join(new_col_data %>%
-      dplyr::select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
+      dplyr::left_join(imputed_values, by = "temp_row_id") %>%
+      dplyr::mutate(
+        !!rlang::sym(col) := dplyr::coalesce(imputed_value, !!rlang::sym(col))
+      ) %>%
+      dplyr::select(-imputed_value)
 
     if(checkpointing & i%%6 == 0){
       cat("\nCheckpointing...\n")
