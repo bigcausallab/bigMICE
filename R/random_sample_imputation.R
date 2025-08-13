@@ -181,7 +181,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
       dplyr::left_join(new_col_data %>%
       dplyr::select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
 
-    print(sdf)
+    sdf %>% select(temp_row_id) %>% print()
 
     if(checkpointing){
       sdf <- sparklyr::sdf_checkpoint(sdf)
