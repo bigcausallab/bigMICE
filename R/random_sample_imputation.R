@@ -133,6 +133,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
 
     # Separate observed and missing values while maintaining original order
     observed_data <- sdf %>% dplyr::filter(!is.na(!!rlang::sym(col)))
+
     missing_data <- sdf %>% dplyr::filter(is.na(!!rlang::sym(col))) %>%
       sparklyr::sdf_with_sequential_id(id = "id")
 
@@ -147,7 +148,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
     }
     cat("Sampling", n_missing, "values")
 
-    frac_boosted <- n_missing/n_observed + 5/100 #sdf_sample is not precise 100% of the time so I oversample then truncate. 5% extra is enough to work most of the time
+    frac_boosted <- n_missing/n_observed + 5/100 #sdf_sample is fast but not precise 100% of the time so I oversample then truncate. 5% extra is enough to work most of the time
     sampled_values <- observed_data %>%
       dplyr::select(!!rlang::sym(col)) %>%
       sparklyr::sdf_sample(fraction = frac_boosted, replacement = TRUE) %>%
@@ -179,6 +180,8 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
       dplyr::select(-!!rlang::sym(col)) %>%  # Drop old column
       dplyr::left_join(new_col_data %>%
       dplyr::select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
+
+    print(sdf)
 
     if(checkpointing){
       sdf <- sparklyr::sdf_checkpoint(sdf)
