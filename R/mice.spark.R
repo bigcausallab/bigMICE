@@ -119,7 +119,7 @@ mice.spark <- function(data,
     init_start_time <- proc.time()
 
     imp_init <- init_with_random_samples(sc, data, column = NULL, checkpointing = checkpointing)
-    imp_init <- imp_init %>% dplyr::select(-dplyr::all_of("temp_row_id"))
+
     # Check that the initialised data does not contain any missing values
     init_end_time <- proc.time()
     init_elapsed <- (init_end_time-init_start_time)['elapsed']
@@ -527,7 +527,7 @@ mice.spark.plus <- function(data, #data + X% missing
     init_start_time <- proc.time()
 
     imp_init <- init_with_random_samples(sc, data, column = NULL, checkpointing = checkpointing)
-    imp_init <- imp_init %>% dplyr::select(-dplyr::all_of("temp_row_id"))
+
     # Check that the initialised data does not contain any missing values
     init_end_time <- proc.time()
     init_elapsed <- (init_end_time-init_start_time)['elapsed']
