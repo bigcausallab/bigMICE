@@ -185,6 +185,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
       dplyr::select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
 
     if(checkpointing & i%%10 == 0){
+      cat("\nCheckpointing...\n")
       sdf <- sparklyr::sdf_checkpoint(sdf, eager=TRUE)
     }
 
