@@ -372,6 +372,13 @@ sampler.spark <- function(sc,
          "none" = j_df, # don't impute this variable
          "Invalid method"  # Default case, should never be reached
       ) # end of switch block
+
+      # Add checkpointing here every 10 loop ? To avoid java.lang.StackOverflowError after 18ish variables
+      if(j%%10 == 0 & checkpointing){
+        cat("\nMany variables, checkpointing to break the lineage\n")
+        result <- sparklyr::sdf_checkpoint(result, eager=TRUE)
+      }
+
     } # end of var_j loop (each variable) (1 iteration)
 
     # Checkpointing (Truncate lineage)
