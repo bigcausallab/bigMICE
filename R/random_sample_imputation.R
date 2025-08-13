@@ -148,7 +148,9 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
     }
     cat("Sampling", n_missing, "values")
 
-    frac_boosted <- n_missing/n_observed + 5/100 #sdf_sample is fast but not precise 100% of the time so I oversample then truncate. 5% extra is enough to work most of the time
+    # sdf_sample is fast but not precise 100% of the time so I oversample, then truncate.
+    # 5% extra is enough to work most of the time
+    frac_boosted <- n_missing/n_observed + 5/100
     sampled_values <- observed_data %>%
       dplyr::select(!!rlang::sym(col)) %>%
       sparklyr::sdf_sample(fraction = frac_boosted, replacement = TRUE) %>%
@@ -165,6 +167,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
         sparklyr::sdf_sample(fraction = frac_boosted, replacement = TRUE) %>%
         utils::head(n_missing) %>%
         sparklyr::sdf_with_sequential_id()
+
       n_sampled_values <- sparklyr::sdf_nrow(sampled_values)
     }
 
@@ -181,13 +184,12 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
       dplyr::left_join(new_col_data %>%
       dplyr::select(temp_row_id, !!rlang::sym(col)), by = "temp_row_id")
 
-    sdf %>% select(temp_row_id) %>% print()
-
-    if(checkpointing){
-      sdf <- sparklyr::sdf_checkpoint(sdf)
+    if(checkpointing & i%%10 == 0){
+      sdf <- sparklyr::sdf_checkpoint(sdf, eager=TRUE)
     }
 
   } #End of for loop over columns
+
   sdf %>% dplyr::arrange(temp_row_id) %>% dplyr::select(-"temp_row_id")
   return(sdf)
 }
