@@ -374,9 +374,12 @@ sampler.spark <- function(sc,
       ) # end of switch block
     } # end of var_j loop (each variable) (1 iteration)
 
+    # Checkpointing (Truncate lineage)
     if(checkpointing){
-      result <- sparklyr::sdf_checkpoint(result)
-    }
+      sparklyr::sdf_debug_string(result)
+      result <- sparklyr::sdf_checkpoint(result, eager=TRUE)
+      print("###DEBUG###")
+      sparklyr::sdf_debug_string(result)    }
   } # end of k loop (iterations)
   return(result)
 } # end of sampler.spark function
