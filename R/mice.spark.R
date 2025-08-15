@@ -503,7 +503,9 @@ mice.spark.plus <- function(data,
 
     init_start_time <- proc.time()
 
-    imp_init <- init_with_random_samples(sc, data, column = NULL, checkpointing = checkpointing)
+    imp_init <- init_with_random_samples(sc, data, column = NULL,
+                                         checkpointing = checkpointing,
+                                         checkpoint_frequency = checkpoint_frequency)
 
     init_end_time <- proc.time()
     init_elapsed <- (init_end_time - init_start_time)['elapsed']
