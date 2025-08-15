@@ -107,11 +107,12 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
 #' @param sdf A Spark DataFrame
 #' @param column The column(s) to impute. If NULL, all columns will be imputed
 #' @param checkpointing Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.
+#' @param checkpoint_frequency Advanced parameter, modify with care. If checkpointing = TRUE, how often to checkpoint , default = 10, so after processing every 10 variables, the lineage will be cut and the current state of computation will be save to disk. A low number might slow down computation but enable bigger computation. A number too high (or not checkpoiting) might cause JVM stackOverflowError as the lineage will have grown too big.
 #' @return The Spark DataFrame with missing values imputed
 #' @export
 #' @examples
 #' #TBD
-init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE) {
+init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE,checkpoint_frequency=10) {
 
   cols_to_process <- if (!is.null(column)) column else colnames(sdf)
   # Add sequential ID to preserve original order
@@ -202,7 +203,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
       dplyr::select(-imputed_value)
     # ---
 
-    if(checkpointing & i%%10 == 0){
+    if(checkpointing & i%%checkpoint_frequency == 0){
       cat("\nCheckpointing...\n")
       sdf <- sparklyr::sdf_checkpoint(sdf, eager=TRUE)
     }

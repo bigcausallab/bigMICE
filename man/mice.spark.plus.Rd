@@ -20,6 +20,7 @@ mice.spark.plus(
   seed = NA,
   imp_init = NULL,
   checkpointing = TRUE,
+  checkpoint_frequency = 10,
   ...
 )
 }
@@ -53,6 +54,8 @@ mice.spark.plus(
 \item{imp_init}{A Spark DataFrame, the original data with missing values, but with initial imputation (by random sampling or mean/median/mode imputation). Can be set to avoid re-running the initialisation step. Otherwise, the function will perform the initialisation step using the MeMoMe function.}
 
 \item{checkpointing}{Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.}
+
+\item{checkpoint_frequency}{Advanced parameter, modify with care. If checkpointing = TRUE, how often to checkpoint , default = 10, so after processing every 10 variables, the lineage will be cut and the current state of computation will be save to disk. A low number might slow down computation but enable bigger computation. A number too high (or not checkpoiting) might cause JVM stackOverflowError as the lineage will have grown too big.}
 
 \item{...}{Additional arguments to be passed to the function. TBD}
 }

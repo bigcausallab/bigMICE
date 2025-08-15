@@ -19,6 +19,7 @@
 #' @param seed An integer, the seed to use for reproducibility
 #' @param imp_init A Spark DataFrame, the original data with missing values, but with initial imputation (by random sampling or mean/median/mode imputation). Can be set to avoid re-running the initialisation step. Otherwise, the function will perform the initialisation step using the MeMoMe function.
 #' @param checkpointing Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.
+#' @param checkpoint_frequency Advanced parameter, modify with care. If checkpointing = TRUE, how often to checkpoint , default = 10, so after processing every 10 variables, the lineage will be cut and the current state of computation will be save to disk. A low number might slow down computation but enable bigger computation. A number too high (or not checkpoiting) might cause JVM stackOverflowError as the lineage will have grown too big.
 #' @param ... Additional arguments to be passed to the function. TBD
 #' @return A list containing the Rubin's statistics for the model parameters, the per-imputation statistics, the imputation statistics, and the model parameters.
 #' @export
@@ -82,20 +83,14 @@ mice.spark <- function(data,
                        seed = NA,
                        imp_init = NULL,
                        checkpointing = TRUE,
+                       checkpoint_frequency = 10,
                        ...) {
 
-  cat("\nUsing bigMICE version 0.1.6 \n")
   if (!is.na(seed)) set.seed(seed)
-
-  # check form of data and m
-  #data <- check.spark.dataform(data)
-
-  #m <- check.m(m)
 
   from <- 1
   to <- from + maxit - 1
 
-  # INITIALISE THE IMPUTATION USING Mean/Mode/Median SAMPLING
   cols <- names(variable_types)
   # Do this inside or outside the m loop ?
   # Do I want each imputation to start from the same sample or have more variation in initial condition ?
@@ -136,7 +131,8 @@ mice.spark <- function(data,
                          var_types = variable_types,
                          predictorMatrix = predictorMatrix,
                          printFlag = printFlag,
-                         checkpointing = checkpointing)
+                         checkpointing = checkpointing,
+                         checkpoint_frequency = checkpoint_frequency)
 
     imp_end_time <- proc.time()
     imp_elapsed <- (imp_end_time-imp_start_time)['elapsed']
@@ -237,6 +233,7 @@ mice.spark <- function(data,
 #' @param printFlag A boolean, whether to print debug information.
 #' @param predictorMatrix A matrix, the predictor matrix to use for the imputation. Beta
 #' @param checkpointing Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.
+#' @param checkpoint_frequency Advanced parameter, modify with care. If checkpointing = TRUE, how often to checkpoint , default = 10, so after processing every 10 variables, the lineage will be cut and the current state of computation will be save to disk. A low number might slow down computation but enable bigger computation. A number too high (or not checkpoiting) might cause JVM stackOverflowError as the lineage will have grown too big.
 #' @return The Spark DataFrame with missing values imputed for all variables
 #' @export
 #' @examples
@@ -278,6 +275,7 @@ sampler.spark <- function(sc,
                           ud_methods = NULL,
                           predictorMatrix = NULL,
                           checkpointing,
+                          checkpoint_frequency,
                           printFlag){
 
 
@@ -374,9 +372,9 @@ sampler.spark <- function(sc,
       result <- switch(method,
          "Logistic" = impute_with_logistic_regression(sc, j_df, label_col, feature_cols),
          "Mult_Logistic" = impute_with_mult_logistic_regression(sc, j_df, label_col, feature_cols),
-         "Linear" = impute_with_linear_regression(sc=sc, sdf=j_df, target_col=label_col,
-                                        feature_cols=feature_cols, target_col_prev=label_col_prev),
          "RandomForestClassifier" = impute_with_random_forest_classifier(sc, j_df, label_col, feature_cols),
+         "Linear" = impute_with_linear_regression(sc=sc, sdf=j_df, target_col=label_col,
+                                                  feature_cols=feature_cols, target_col_prev=label_col_prev),
          "RandomForestRegressor" = impute_with_random_forest_regressor(sc, sdf=j_df, target_col=label_col,
                                         feature_cols=feature_cols, target_col_prev=label_col_prev),
          "none" = j_df, # don't impute this variable
@@ -384,7 +382,7 @@ sampler.spark <- function(sc,
       ) # end of switch block
 
       # Add checkpointing here every 10 loop ? To avoid java.lang.StackOverflowError after 18ish variables
-      if(j%%10 == 0 & checkpointing){
+      if(j%%checkpoint_frequency == 0 & checkpointing){
         cat("\nMany variables, checkpointing to break the lineage\n")
         result <- sparklyr::sdf_checkpoint(result, eager=TRUE)
       }
@@ -422,6 +420,7 @@ sampler.spark <- function(sc,
 #' @param seed An integer, the seed to use for reproducibility
 #' @param imp_init A Spark DataFrame, the original data with missing values, but with initial imputation (by random sampling or mean/median/mode imputation). Can be set to avoid re-running the initialisation step. Otherwise, the function will perform the initialisation step using the MeMoMe function.
 #' @param checkpointing Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.
+#' @param checkpoint_frequency Advanced parameter, modify with care. If checkpointing = TRUE, how often to checkpoint , default = 10, so after processing every 10 variables, the lineage will be cut and the current state of computation will be save to disk. A low number might slow down computation but enable bigger computation. A number too high (or not checkpoiting) might cause JVM stackOverflowError as the lineage will have grown too big.
 #' @param ... Additional arguments to be passed to the function. TBD
 #' @return A list containing the Rubin's statistics for the model parameters, the per-imputation statistics, the imputation statistics, and the model parameters.
 #' @export
@@ -478,6 +477,7 @@ mice.spark.plus <- function(data,
                        seed = NA,
                        imp_init = NULL,
                        checkpointing = TRUE,
+                       checkpoint_frequency = 10,
                        ...) {
 
   if (!is.na(seed)) set.seed(seed)
@@ -521,7 +521,8 @@ mice.spark.plus <- function(data,
                          ud_methods = modeltype,
                          predictorMatrix = predictorMatrix,
                          printFlag = printFlag,
-                         checkpointing = checkpointing)
+                         checkpointing = checkpointing,
+                         checkpoint_frequency = checkpoint_frequency)
 
     imp_end_time <- proc.time()
     imp_elapsed <- (imp_end_time - imp_start_time)['elapsed']
