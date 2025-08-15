@@ -10,6 +10,7 @@ sampler.spark(
   imp_init,
   fromto,
   var_types,
+  ud_methods = NULL,
   predictorMatrix = NULL,
   checkpointing,
   printFlag
@@ -26,7 +27,9 @@ sampler.spark(
 
 \item{var_types}{A named character vector, the variable types of the columns in the data.}
 
-\item{predictorMatrix}{A matrix, the predictor matrix to use for the imputation. TBD}
+\item{ud_methods}{The user-defined methods for imputing each variables. Beta}
+
+\item{predictorMatrix}{A matrix, the predictor matrix to use for the imputation. Beta}
 
 \item{checkpointing}{Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.}
 

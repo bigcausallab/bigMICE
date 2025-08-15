@@ -6,7 +6,6 @@
 \usage{
 mice.spark.plus(
   data,
-  data_true,
   sc,
   variable_types,
   analysis_formula,
@@ -27,8 +26,6 @@ mice.spark.plus(
 \arguments{
 \item{data}{A Spark DataFrame, the original data with extra missing values}
 
-\item{data_true}{A Spark DataFrame, the original data without extra missing values}
-
 \item{sc}{A Spark connection}
 
 \item{variable_types}{A named character vector, the variable types of the columns in the data.}
@@ -45,7 +42,7 @@ mice.spark.plus(
 
 \item{formulas}{A list, the formulas to use for the imputation. If NULL, the function will infer the formulas based on the other variables present in the data. TBD}
 
-\item{modeltype}{A character vector, the model type to use for the imputation. If NULL, the function will infer the model type based on the variable types. TBD}
+\item{modeltype}{A character vector, the model type to use for the imputation. If NULL, the function will infer the model type based on the variable types. The methods specified must match the order of the variables and must be one of "Logistic","Mult_Logistic","Linear","RandomForestClassifier","RandomForestRegressor" or "none".}
 
 \item{maxit}{The maximum number of iterations to perform}
 

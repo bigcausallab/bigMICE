@@ -233,8 +233,9 @@ mice.spark <- function(data,
 #' @param imp_init A Spark DataFrame, the original data with missing values, but with initial imputation (by random sampling or mean/median/mode imputation)
 #' @param fromto A vector of length 2, the range of iterations to perform (from, to)
 #' @param var_types A named character vector, the variable types of the columns in the data.
+#' @param ud_methods The user-defined methods for imputing each variables. Beta
 #' @param printFlag A boolean, whether to print debug information.
-#' @param predictorMatrix A matrix, the predictor matrix to use for the imputation. TBD
+#' @param predictorMatrix A matrix, the predictor matrix to use for the imputation. Beta
 #' @param checkpointing Default TRUE. Can be set to FALSE if you are running the package without access to a HDFS directory for checkpointing. It is strongly recommended to keep it to TRUE to avoid Stackoverflow errors.
 #' @return The Spark DataFrame with missing values imputed for all variables
 #' @export
@@ -274,6 +275,7 @@ sampler.spark <- function(sc,
                           imp_init,
                           fromto,
                           var_types,
+                          ud_methods = NULL,
                           predictorMatrix = NULL,
                           checkpointing,
                           printFlag){
@@ -289,21 +291,29 @@ sampler.spark <- function(sc,
 
   # Method dictionary for imputation. Can change as desired
   # TODO: implement; keep this as default, or use user-provided dict ?
-  method_dict <- c("Binary" = "Logistic",
-                   "Nominal" = "Mult_Logistic",
-                   "Ordinal" = "RandomForestClassifier",
-                   "Code (don't impute)" = "none", # LopNr, Unit_code etc...
-                   "Continuous_int" = "Linear",
-                   "Continuous_float" = "Linear",
-                   "smalldatetime" = "none",  #TBD
-                   "String" = "none", #TBD
-                   "Count" = "RandomForestClassifier", #TBD
-                   "Semi-continuous" = "none", #TBD
-                   "Else" = "none")
 
-  imp_methods <- replace(var_types, var_types %in% names(method_dict), method_dict[var_types])
-  names(imp_methods) <- var_names
-  # print(imp_methods)
+  if(is.null(ud_methods)){
+    method_dict <- c("Binary" = "Logistic",
+                     "Nominal" = "Mult_Logistic",
+                     "Ordinal" = "RandomForestClassifier",
+                     "Code (don't impute)" = "none", # LopNr, Unit_code etc...
+                     "Continuous_int" = "Linear",
+                     "Continuous_float" = "Linear",
+                     "smalldatetime" = "none",  #TBD
+                     "String" = "none", #TBD
+                     "Count" = "RandomForestClassifier", #TBD
+                     "Semi-continuous" = "none", #TBD
+                     "Else" = "none")
+
+    imp_methods <- replace(var_types, var_types %in% names(method_dict), method_dict[var_types])
+    names(imp_methods) <- var_names
+  }
+  else{
+    print("Using user-defined imputation methods")
+    imp_methods <- ud_methods
+    names(imp_methods) <- var_names
+  }
+
   num_vars <- length(var_names)
   # print("**DEBUG**: imp_methods:")
   # initialize the result with the initial imputation (mean or random)
@@ -399,7 +409,6 @@ sampler.spark <- function(sc,
 #'
 #' @param sc A Spark connection
 #' @param data A Spark DataFrame, the original data with extra missing values
-#' @param data_true A Spark DataFrame, the original data without extra missing values
 #' @param variable_types A named character vector, the variable types of the columns in the data.
 #' @param analysis_formula A formula, the formula to use for the analysis
 #' @param where_missing A logical vector, the locations of the missing values in the data
@@ -407,7 +416,7 @@ sampler.spark <- function(sc,
 #' @param method A character vector, the imputation method to use for each variable. If NULL, the function will infer the method based on the variable types.
 #' @param predictorMatrix A matrix, the predictor matrix to use for the imputation. TBD
 #' @param formulas A list, the formulas to use for the imputation. If NULL, the function will infer the formulas based on the other variables present in the data. TBD
-#' @param modeltype A character vector, the model type to use for the imputation. If NULL, the function will infer the model type based on the variable types. TBD
+#' @param modeltype A character vector, the model type to use for the imputation. If NULL, the function will infer the model type based on the variable types. The methods specified must match the order of the variables and must be one of "Logistic","Mult_Logistic","Linear","RandomForestClassifier","RandomForestRegressor" or "none".
 #' @param maxit The maximum number of iterations to perform
 #' @param printFlag A boolean, whether to print debug information
 #' @param seed An integer, the seed to use for reproducibility
@@ -454,8 +463,7 @@ sampler.spark <- function(sc,
 #' # Clean up
 #' #spark_disconnect(sc)
 
-mice.spark.plus <- function(data, #data + X% missing
-                       data_true, #data without missing
+mice.spark.plus <- function(data,
                        sc,
                        variable_types, # Used for initialization and method selection
                        analysis_formula,
@@ -472,53 +480,22 @@ mice.spark.plus <- function(data, #data + X% missing
                        checkpointing = TRUE,
                        ...) {
 
-  cat("\nUsing bigMICE version 0.1.6 \n")
   if (!is.na(seed)) set.seed(seed)
 
   from <- 1
   to <- from + maxit - 1
 
-  # INITIALISE THE IMPUTATION USING Mean/Mode/Median SAMPLING
-  cols <- names(variable_types)
-  # Do this inside or outside the m loop ?
-  # Do I want each imputation to start from the same sample or have more variation in initial condition ?
-
-  #TODO : add support for column parameter in initialisation
-
-  # Dictionnary to infer initialization method based on variable type
-  # Should be one of (mean, mode, median, none), and be used as input of MeMoMe function
-  init_dict <- c("Binary" = "mode",
-                 "Nominal" = "mode",
-                 "Ordinal" = "mode",
-                 "Code (don't impute)" = "none", # LopNr, Unit_code etc...
-                 "Continuous_int" = "median",
-                 "Continuous_float" = "mean",
-                 "smalldatetime" = "none",
-                 "String" = "none", #TBD
-                 "Count" = "median", #TBD
-                 "Semi-continuous" = "none", #TBD
-                 "Else", "none")
-
-  init_modes <- replace(variable_types, variable_types %in% names(init_dict), init_dict[variable_types])
-  names(init_modes) <- cols
-  # print("**DEBUG**: init_modes:")
-  # print(init_modes)
-
-
-  # TODO : Add elapse time to the result dataframe (and create result dataframe)
-
-  ### Rubin Rules Stats INIT###
   # Get the formula for the model
   formula_obj <- analysis_formula
   param_names <- c("(Intercept)", all.vars(formula_obj)[-1])
 
   model_params <- vector("list", m)
 
-  # List to store per-imputation information
+  # To store per-imputation information
   imputation_stats <- vector("list", m)
 
-  # Object to store the known missing sparse matrices
-  known_missings <- list()
+  # To store the result imputations
+  imputations <- list()
 
   # FOR EACH IMPUTATION SET i = 1, ..., m
   for (i in 1:m) {
@@ -528,9 +505,8 @@ mice.spark.plus <- function(data, #data + X% missing
 
     imp_init <- init_with_random_samples(sc, data, column = NULL, checkpointing = checkpointing)
 
-    # Check that the initialised data does not contain any missing values
     init_end_time <- proc.time()
-    init_elapsed <- (init_end_time-init_start_time)['elapsed']
+    init_elapsed <- (init_end_time - init_start_time)['elapsed']
     cat("Initalisation time:", init_elapsed)
 
     cat("\nImputation: ", i, "\n")
@@ -542,54 +518,31 @@ mice.spark.plus <- function(data, #data + X% missing
                          imp_init = imp_init,
                          fromto = c(from, to),
                          var_types = variable_types,
+                         ud_methods = modeltype,
                          predictorMatrix = predictorMatrix,
                          printFlag = printFlag,
                          checkpointing = checkpointing)
 
     imp_end_time <- proc.time()
-    imp_elapsed <- (imp_end_time-imp_start_time)['elapsed']
+    imp_elapsed <- (imp_end_time - imp_start_time)['elapsed']
     cat("\nImputation time:", imp_elapsed,".\n")
 
     pre_pred_cols <- c(colnames(data))
     post_pred_cols <- colnames(imp)
     extra_cols <- setdiff(post_pred_cols, pre_pred_cols)
     imp <- imp %>% dplyr::select(-dplyr::all_of(extra_cols))
-    #print(colnames(imp))
 
-    # Obtain known missings sparse matrix
-    cat("Obtaining known missings sparse matrix.\n")
-
-    # Collect the imo result:
-
-    #print(known_missings_m)
-
-    # Sparse location = is.na(data) & !is.na(data_true)
-    # where_sparse <- data %>% sparklyr::select( dplyr::all_of(colnames(data))) %>%
-    #   sparklyr::mutate(known = is.na(data) & !is.na(data_true)) %>%
-    #   sparklyr::select(dplyr::all_of(colnames(data)), known)
-    #
-    # print("where_sparse")
-    # print(where_sparse)
-
-
-    # Extract the known missing from imp using where_sparse
-    # known_missings_m <- imp %>%
-    #   sparklyr::inner_join(where_sparse, by = colnames(data)) %>%
-    #   sparklyr::select(dplyr::all_of(colnames(data)), known) %>%
-    #   dplyr::filter(known == TRUE) %>%
-    #   dplyr::select(-known)
-
-    #print(known_missings_m)
-
-    known_missings[[i]] <- imp
+    # Save imputed dataset
+    imputations[[i]] <- imp
 
     #%%%% Analysis on the imputed data%%%%%
+    # TODO: Add the functionality to choose what time of analysis, instead of logistic only
     model <- imp %>%
       sparklyr::ml_logistic_regression(formula = formula_obj)
 
     # Store model coefficients
     model_params[[i]] <- model$coefficients
-    print(model$coefficients)
+
     # Create per-imputation summary for this iteration
     imp_summary <- list(
       imputation_number = i,
@@ -621,7 +574,7 @@ mice.spark.plus <- function(data, #data + X% missing
     if (param %in% colnames(params_matrix)) {
       param_values <- params_matrix[, param]
 
-      # Calculate Rubin's statistics
+      # Calculate Rubin's statistics. Source: TODO
       pooled_param <- mean(param_values, na.rm = TRUE)
       between_var <- sum((param_values - pooled_param)^2) / (m - 1)
 
@@ -653,7 +606,7 @@ mice.spark.plus <- function(data, #data + X% missing
     per_imputation = per_imputation_df,
     imputation_stats = imputation_stats,
     model_params = model_params,
-    known_missings = known_missings
+    imputations = imputations
   ))
 }
 
