@@ -509,7 +509,7 @@ mice.spark.plus <- function(data,
 
     init_end_time <- proc.time()
     init_elapsed <- (init_end_time - init_start_time)['elapsed']
-    cat("Initalisation time:", init_elapsed)
+    cat("\nInitalisation time:", init_elapsed)
 
     cat("\nImputation: ", i, "\n")
     # Run the imputation algorithm
