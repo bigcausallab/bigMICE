@@ -204,7 +204,7 @@ init_with_random_samples<- function(sc, sdf, column = NULL, checkpointing = TRUE
     # ---
 
     if(checkpointing & i%%checkpoint_frequency == 0){
-      cat("\nCheckpointing...\n")
+      cat("\nCheckpointing..\n")
       sdf <- sparklyr::sdf_checkpoint(sdf, eager=TRUE)
     }
 
