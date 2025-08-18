@@ -71,7 +71,7 @@
 
 mice.spark <- function(data,
                        sc,
-                       variable_types, # Used for initialization and method selection
+                       variable_types, # Used for mean initialization and imp method selection
                        analysis_formula,
                        m = 5,
                        method = NULL,
