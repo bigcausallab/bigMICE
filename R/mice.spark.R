@@ -210,13 +210,16 @@ mice.spark <- function(data,
     data.frame(imp, stringsAsFactors = FALSE)
   }))
 
-  # Returning both the aggregated results and per-imputation statistics
-  return(list(
+  results <- list(
     rubin_stats = results,
     per_imputation = per_imputation_df,
     imputation_stats = imputation_stats,
     model_params = model_params
-  ))
+  )
+
+  # Set the class for proper printing
+  class(results) <- c("mi_results", "list")
+  return(results)
 }
 
 
