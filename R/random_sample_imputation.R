@@ -69,8 +69,8 @@ impute_with_random_samples<- function(sc, sdf, column = NULL) {
     #n_sampled4 <- sparklyr::sdf_nrow(sampled_values)
     #cat(" n_sampled4", n_sampled4,"\n")
 
-    print(colnames(sampled_values))
-    print(sampled_values %>% head(5))
+    #print(colnames(sampled_values))
+    #print(sampled_values %>% head(5))
 
     # Add sequential ID to missing_data for joining
     missing_data_with_id <- missing_data %>% sparklyr::sdf_with_sequential_id(id = "id")
