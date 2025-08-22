@@ -9,7 +9,8 @@ impute_with_random_forest_regressor(
   sdf,
   target_col,
   feature_cols,
-  target_col_prev
+  target_col_prev,
+  max_depth = 15
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ impute_with_random_forest_regressor(
 \item{feature_cols}{The columns to use as features in the Random Forest regression model. These columns should not have missing values.}
 
 \item{target_col_prev}{the target column at the previous iteration. Used to calculate residuals.}
+
+\item{max_depth}{Parameter of ml_random_forest, see its documentation for more details.}
 }
 \value{
 The Spark DataFrame with missing values imputed in the target column

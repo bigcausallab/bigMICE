@@ -8,6 +8,7 @@
 #' @param target_col The column with missing values to impute
 #' @param feature_cols The columns to use as features in the Random Forest regression model. These columns should not have missing values.
 #' @param target_col_prev the target column at the previous iteration. Used to calculate residuals.
+#' @param max_depth Parameter of ml_random_forest, see its documentation for more details.
 #' @return The Spark DataFrame with missing values imputed in the target column
 #' @export
 #' @examples
