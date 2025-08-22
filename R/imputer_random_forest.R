@@ -50,7 +50,7 @@
 #' # Clean up
 #' #spark_disconnect(sc)
 
-impute_with_random_forest_regressor <- function(sc, sdf, target_col, feature_cols, target_col_prev) {
+impute_with_random_forest_regressor <- function(sc, sdf, target_col, feature_cols, target_col_prev, max_depth=15) {
   # Random forest regressor using sparklyr ml_random_forest Good for continuous values
   # Doc: https://rdrr.io/cran/sparklyr/man/ml_random_forest.html
 
