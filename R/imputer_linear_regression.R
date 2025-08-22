@@ -89,39 +89,49 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
     sparklyr::ml_linear_regression(formula = formula_obj,
                          elastic_net_param = elastic_net_param)
 
-  # Step 5: Predict missing values
-  predictions <- sparklyr::ml_predict(lm_model, incomplete_data) %>%
+  # TODO: combine the predicts and seperate after the train/test predictions
+  # Step 5: Predict missing values (test)
+  incomplete_predictions <- sparklyr::ml_predict(model, incomplete_data) %>%
     sparklyr::sdf_with_sequential_id("pred_id")
 
-  # 3 additional columns : , id <dbl>, prediction <dbl>, pred_id <dbl>
-  pred_residuals <- predictions %>%
-    sparklyr::inner_join(target_col_prev, by = "id")
+  # Step 6: Also predict the observed values. (Train)
+  # The residuals of these predictions are used to estimate RMSE
+  complete_predictions <- sparklyr::ml_predict(model, complete_data) %>%
+    sparklyr::sdf_with_sequential_id("rmse_id") #needed ?
+  # Join the
+  pred_residuals <- complete_predictions %>%
+    dplyr::inner_join(target_col_prev, by = "id")
+
+  # plot "prediction" versus "!!rlang::sym(paste0(target_col,"_y")"
+  # print(ggplot2::ggplot(pred_residuals, ggplot2::aes(x = prediction, y = !!rlang::sym(paste0(target_col,"_y")))) + ggplot2::geom_point() + ggplot2::labs(title = paste("prediction versus", paste0(target_col,"_y")), x = "prediction", y = paste0(target_col,"_y")))
+
 
   sd_res <- pred_residuals %>%
     sparklyr::mutate(residuals = (prediction - !!rlang::sym(paste0(target_col,"_y")))^2)
 
+  #then the difference !!rlang::sym(paste0(target_col,"_y")-prediction versus prediction
+  # print(pred_residuals %>% dplyr::mutate(diff = !!rlang::sym(paste0(target_col,"_y")) - prediction) %>% ggplot2::ggplot(ggplot2::aes(x = diff, y = prediction)) + ggplot2::geom_point() + ggplot2::labs(title = paste("difference", paste0(target_col,"_y"), "- prediction versus prediction"), x = "difference", y = "prediction"))
+
   sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% dplyr::collect()
-  # for a prediction on variable "alder", all other columns and :
-  # alder_x <int>, id <dbl>, prediction <dbl>, pred_id <dbl>, alder_y <int>, residuals <dbl>
 
   sd_res <- sqrt(sd_res[[1, 1]])
+  cat("- RMSE residuals:", sd_res," -")
 
   # Add noise to prediction to account for uncertainty
-  n_pred <- sparklyr::sdf_nrow(predictions)
-
-  noise_sdf <- sparklyr::sdf_rnorm(sc = sc, n = n_pred, sd = sd_res, output_col = "noise") %>%
+  n_pred <- sparklyr::sdf_nrow(incomplete_predictions)
+  noise_sdf <- sparklyr::sdf_rnorm(sc = sc, n = n_pred, mean = 0, sd = sd_res, output_col = "noise") %>%
     sparklyr::sdf_with_sequential_id("pred_id")
 
   #Join the noise and the prediction
-  predictions <- predictions %>% dplyr::inner_join(noise_sdf, by="pred_id") %>%
+  incomplete_predictions <- incomplete_predictions %>% dplyr::inner_join(noise_sdf, by="pred_id") %>%
     dplyr::select(-dplyr::all_of("pred_id")) %>%
     sparklyr::mutate(noisy_pred = prediction + noise) %>%
-    dplyr::select(-dplyr::all_of(c("prediction","noise")))
+    dplyr::select(-dplyr::all_of(c("prediction","noise"))) # removing of original prediction and individual noise added. only "noisy_pred" remains
 
   # Replace the NULL values with predictions
-  incomplete_data <- predictions %>%
+  incomplete_data <- incomplete_predictions %>%
     dplyr::select(-!!rlang::sym(target_col)) %>%  # Remove the original NULL column
-    dplyr::rename(!!rlang::sym(target_col) := noisy_pred)  # Rename prediction to target_col
+    dplyr::rename(!!rlang::sym(target_col) := noisy_pred)  # Rename noisy_prediction to target_col name
 
   # Re join the observed and imputed rows
   result <- complete_data %>%
