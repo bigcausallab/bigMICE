@@ -1,6 +1,6 @@
 <h1>
-  bigMice : MICE for big data
   <img src="images/bigMicelogo.webp" alt="Logo" width="150" height="150">
+  bigMice : MICE for big data
 </h1>
 
 <!-- badges: start -->
