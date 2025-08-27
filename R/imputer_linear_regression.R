@@ -85,7 +85,7 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   formula_obj <- stats::as.formula(formula_str)
 
   # Step 4: Build linear regression model on complete data
-  lm_model <- complete_data %>%
+  model <- complete_data %>%
     sparklyr::ml_linear_regression(formula = formula_obj,
                          elastic_net_param = elastic_net_param)
 
