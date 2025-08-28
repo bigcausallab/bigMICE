@@ -17,3 +17,6 @@ Imports:
     Matrix
 URL: https://github.com/hugo-morvan/bigMice
 BugReports: https://github.com/hugo-morvan/bigMice/issues
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
