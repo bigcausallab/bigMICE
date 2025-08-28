@@ -52,7 +52,12 @@
 #' # Clean up
 #' #spark_disconnect(sc)
 #' @export
-impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, elastic_net_param = 0,target_col_prev) {
+impute_with_linear_regression <- function(sc,
+                                          sdf,
+                                          target_col,
+                                          feature_cols,
+                                          elastic_net_param = 0,
+                                          target_col_prev) {
 
   # Step 0; Validate inputs
   if (!is.character(target_col) || length(target_col) != 1) {
@@ -88,32 +93,33 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   model <- complete_data %>%
     sparklyr::ml_linear_regression(formula = formula_obj,
                          elastic_net_param = elastic_net_param)
-
-  # TODO: combine the predicts and seperate after the train/test predictions
+  print(1)
+  # TODO: combine the predicts and separate after the train/test predictions
   # Step 5: Predict missing values (test)
   incomplete_predictions <- sparklyr::ml_predict(model, incomplete_data) %>%
     sparklyr::sdf_with_sequential_id("pred_id")
-
+  print(2)
   # Step 6: Also predict the observed values. (Train)
   # The residuals of these predictions are used to estimate RMSE
   complete_predictions <- sparklyr::ml_predict(model, complete_data) %>%
     sparklyr::sdf_with_sequential_id("rmse_id") #needed ?
   # Join the
+  print(3)
   pred_residuals <- complete_predictions %>%
     dplyr::inner_join(target_col_prev, by = "id")
 
+  print(colnames(pred_residuals))
   # plot "prediction" versus "!!rlang::sym(paste0(target_col,"_y")"
   # print(ggplot2::ggplot(pred_residuals, ggplot2::aes(x = prediction, y = !!rlang::sym(paste0(target_col,"_y")))) + ggplot2::geom_point() + ggplot2::labs(title = paste("prediction versus", paste0(target_col,"_y")), x = "prediction", y = paste0(target_col,"_y")))
 
-
   sd_res <- pred_residuals %>%
     sparklyr::mutate(residuals = (prediction - !!rlang::sym(paste0(target_col,"_y")))^2)
-
+  print(4)
   #then the difference !!rlang::sym(paste0(target_col,"_y")-prediction versus prediction
   # print(pred_residuals %>% dplyr::mutate(diff = !!rlang::sym(paste0(target_col,"_y")) - prediction) %>% ggplot2::ggplot(ggplot2::aes(x = diff, y = prediction)) + ggplot2::geom_point() + ggplot2::labs(title = paste("difference", paste0(target_col,"_y"), "- prediction versus prediction"), x = "difference", y = "prediction"))
 
   sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% dplyr::collect()
-
+  print(5)
   sd_res <- sqrt(sd_res[[1, 1]])
   cat("- RMSE residuals:", sd_res," -")
 
@@ -141,6 +147,6 @@ impute_with_linear_regression <- function(sc, sdf, target_col, feature_cols, ela
   result <- result %>%
     dplyr::arrange(id) %>%
     dplyr::select(-id)
-
+  print(colnames(result))
   return(result)
 }
