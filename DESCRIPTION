@@ -1,10 +1,10 @@
-Package: bigMice
+Package: bigMICE
 Type: Package
 Title: Adaptation of R package mice for big data using Apache Spark
 Version: 1.0.0
 Author: Hugo Morvan <hugmo82@liu.se>
 Maintainer: Hugo Morvan <hugmo82@liu.se>
-Description: bigMice is an R package designed for handling missing values in large datasets with MICE using an efficient and scalable approach.
+Description: bigMICE is an R package designed for handling missing values in large datasets with MICE using an efficient and scalable approach.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
@@ -15,8 +15,8 @@ Imports:
     sparklyr,
     data.table,
     Matrix
-URL: https://github.com/hugo-morvan/bigMice
-BugReports: https://github.com/hugo-morvan/bigMice/issues
+URL: https://github.com/hugo-morvan/bigMICE
+BugReports: https://github.com/hugo-morvan/bigMICE/issues
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

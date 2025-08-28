@@ -1,11 +1,11 @@
-# bigMice <img src="man/figures/logo.png" align="right" height="200" alt="" />
+# bigMICE <img src="man/figures/logo.png" align="right" height="200" alt="" />
 
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/hugo-morvan/bigMice/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hugo-morvan/bigMice/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/hugo-morvan/bigMICE/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hugo-morvan/bigMICE/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-bigMice is an R package based on the `sparklyr` library, designed for handling large datasets with multiple imputation using an efficient and scalable approach.
+bigMICE is an R package based on the `sparklyr` library, designed for handling large datasets with multiple imputation using an efficient and scalable approach.
 
 ## Setup and recommendations
 
@@ -40,27 +40,27 @@ If you do not have access to a HDFS directory, make sure to include the paramete
 
 ## Installation
 
-To install bigMice from GitHub, use the following command in R:
+To install bigMICE from GitHub, use the following command in R:
 
 ```r
 # Install devtools if not already installed
 install.packages("devtools")
 
-# Install bigMice from GitHub
-devtools::install_github("hugo-morvan/bigMice")
+# Install bigMICE from GitHub
+devtools::install_github("hugo-morvan/bigMICE")
 ```
 
 Once installed, load the package:
 
 ```r
-library(bigMice)
+library(bigMICE)
 ```
 
 ## Example Usage
 
 Loading necessary libraries:
 ```r
-library(bigMice)
+library(bigMICE)
 library(dplyr)
 library(sparklyr)
 ```
@@ -95,7 +95,7 @@ analysis_formula <- as.formula("phb ~ age + gen + tv + reg")
 ```
 Calling the mice.spark function to obtain m=1 imputed dataset:
 ```r
-imputation_results <- bigMice::mice.spark(data = sdf,
+imputation_results <- bigMICE::mice.spark(data = sdf,
                                             sc = sc,
                                 variable_types = variable_types,
                               analysis_formula = analysis_formula,
