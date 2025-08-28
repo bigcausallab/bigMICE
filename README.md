@@ -1,4 +1,4 @@
-# bigMice <img src="man/figures/logo.png" align="right" height="139" alt="" />
+# bigMice <img src="man/figures/logo.png" align="right" height="180" alt="" />
 
 
 <!-- badges: start -->
