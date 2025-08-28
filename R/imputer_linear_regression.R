@@ -78,9 +78,13 @@ impute_with_linear_regression <- function(sc,
 
   incomplete_data <- sdf %>%
     dplyr::filter(is.na(!!rlang::sym(target_col)))
+
   n_incomplete <- sparklyr::sdf_nrow(incomplete_data)
 
   if(n_incomplete == 0){
+    # Note: Move this to before adding sequential id to return faster ?
+    # Which is faster ? adding sequential id then filter for is.na once
+    #                 or filter for is.na twice but potentially skip faster ?
     cat("- No missing values, skipping imputation")
     return(sdf %>% dplyr::select(-dplyr::all_of("id")))
   }
@@ -90,11 +94,12 @@ impute_with_linear_regression <- function(sc,
   formula_obj <- stats::as.formula(formula_str)
 
   # Step 4: Build linear regression model on complete data
+  # TODO: add the possibility to specify more model hyperparameters (do.call(...))
   model <- complete_data %>%
     sparklyr::ml_linear_regression(formula = formula_obj,
                          elastic_net_param = elastic_net_param)
 
-  # TODO: combine the predicts and separate after the train/test predictions
+  # TODO: combine the predicts and separate after the train/test predictions ? instead of predicting twice
   # Step 5: Predict missing values (test)
   incomplete_predictions <- sparklyr::ml_predict(model, incomplete_data) %>%
     sparklyr::sdf_with_sequential_id("pred_id")
@@ -103,7 +108,7 @@ impute_with_linear_regression <- function(sc,
   # The residuals of these predictions are used to estimate RMSE
   complete_predictions <- sparklyr::ml_predict(model, complete_data) %>%
     sparklyr::sdf_with_sequential_id("rmse_id") #needed ?
-  # Join the
+
 
   pred_residuals <- complete_predictions %>%
     dplyr::inner_join(target_col_prev, by = "id")
@@ -121,9 +126,10 @@ impute_with_linear_regression <- function(sc,
   sd_res <- sd_res %>% dplyr::summarise(res_mean = mean(residuals, na.rm = TRUE)) %>% dplyr::collect()
 
   sd_res <- sqrt(sd_res[[1, 1]])
+  # TODO: make this print an option
   cat("- RMSE residuals:", sd_res," -")
 
-  # Add noise to prediction to account for uncertainty
+  # Add noise to prediction to simulate draws from posterior predictive dist.
   n_pred <- sparklyr::sdf_nrow(incomplete_predictions)
   noise_sdf <- sparklyr::sdf_rnorm(sc = sc, n = n_pred, mean = 0, sd = sd_res, output_col = "noise") %>%
     sparklyr::sdf_with_sequential_id("pred_id")

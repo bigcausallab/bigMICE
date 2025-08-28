@@ -112,10 +112,10 @@ mice.spark <- function(data,
     cat("\nStarting initialisation\n")
 
     init_start_time <- proc.time()
-
+    # TODO: add the potion to use mean sampling instead ?
     imp_init <- init_with_random_samples(sc, data, column = NULL, checkpointing = checkpointing)
 
-    # Check that the initialised data does not contain any missing values
+    # Check that the initialized data does not contain any missing values
     init_end_time <- proc.time()
     init_elapsed <- (init_end_time-init_start_time)['elapsed']
     cat("\nInitalisation time:", init_elapsed)
@@ -138,14 +138,14 @@ mice.spark <- function(data,
     imp_elapsed <- (imp_end_time-imp_start_time)['elapsed']
     cat("\nImputation time:", imp_elapsed,".\n")
 
-    # Save imputation to dataframe ? Maybe only the last one ?
 
-    # Compute user-provided analysis on the fly on the imputed data ?
+    # Compute user-provided analysis on the fly on the imputed data so we dont have to store each imputation
 
     # Calculate Rubin Rules statistics
     # Fit model on imputed data
     cat("Fitting model on imputed data\n")
 
+    # TODO: PRIORITY: change this to a do.call() type of expression evaluation to allow more flexibility in the downstream analysis.
     model <- imp %>%
       sparklyr::ml_logistic_regression(formula = formula_obj)
 
@@ -160,6 +160,7 @@ mice.spark <- function(data,
     )
 
     # Add model coefficients to the imputation summary
+    # This part might need to be changed if we implement custom user-defined downstream analysis
     for (param in param_names) {
       if (param %in% names(model$coefficients)) {
         imp_summary[[param]] <- model$coefficients[[param]]
@@ -175,6 +176,7 @@ mice.spark <- function(data,
   } # END FOR EACH IMPUTATION SET i = 1, ..., m
 
   # Rubin's Statistics for model parameters
+  # This part might need to be changed if we implement custom user-defined downstream analysis
   results <- list()
 
   # Create a matrix of parameters from all imputations
@@ -185,14 +187,20 @@ mice.spark <- function(data,
       param_values <- params_matrix[, param]
 
       # Calculate Rubin's statistics
+      # SOURCE: https://stefvanbuuren.name/fimd/sec-whyandwhen.html
+      #$\bar{Q} = \frac{1}{m}\sum_{l=1}^{m}\hat{Q}_l$.
       pooled_param <- mean(param_values, na.rm = TRUE)
-      between_var <- sum((param_values - pooled_param)^2) / (m - 1)
 
-      # For model parameters, within variance needs to be estimated from model
-      # Here we'll use a simplified approach - using the variance of the estimates
+      # within-imputation variance is defined as $\bar{U} = \frac{1}{m}\sum_{l=1}^{m}\bar{U}_l$ where the term $\bar{U}_l$ is the variance-covariance matrix of Q obtained for the l-th imputation.
+
+      # Here we use a simplified approach using the variance of the estimates because the variance covariance matrix might be too expensive for big datasets. Needs to be investigated.
       # In a more complete implementation, this would come from the model's variance-covariance matrix
       within_var <- mean((param_values - pooled_param)^2) / m
 
+      # between-imputation variance $B = \frac{1}{m-1}\sum_{l=1}^{m}(\hat{Q}_l - \bar{Q})(\hat{Q}_l - \bar{Q})^\prime$,
+      between_var <- sum((param_values - pooled_param)^2) / (m - 1)
+
+      # total variance $T = \bar{U} + B + B/m$
       total_var <- within_var + between_var + (between_var / m)
 
       results[[param]] <- list(

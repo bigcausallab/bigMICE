@@ -44,13 +44,6 @@
 #' @export
 
 impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
-  # FOR BOOLEAN VARIABLES ONLY (0/1)
-  # For categorical variables, use impute_with_mult_logistic_regression
-  # Given a spark connection, a spark dataframe, a target column with missing values,
-  # and feature columns without missing values, this function:
-  # 1. Builds a logistic regression model using complete cases
-  # 2. Uses that model to predict missing values
-  # 3. Returns a dataframe with imputed values in the target column
 
   # Step 0; Validate inputs
   if (!is.character(target_col) || length(target_col) != 1) {
@@ -81,6 +74,7 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
   formula_obj <- stats::as.formula(formula_str)
 
   # Step 4: Build logistic regression model on complete data
+  # TODO: add the possibility to specify more model hyperparameters (do.call(...))
   model <- complete_data %>%
     sparklyr::ml_logistic_regression(formula = formula_obj)
 
@@ -105,6 +99,7 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
   classes <- colnames(predictions %>% dplyr::select(dplyr::starts_with("probability_"))) %>%
     sub(pattern = "probability_", replacement = "")
 
+  # Make this optional ?
   #cat("LogReg - DEBUG: class names = ", classes)
 
   # Step 3: Generate the cumulative probability columns:
@@ -120,7 +115,7 @@ impute_with_logistic_regression <- function(sc, sdf, target_col, feature_cols) {
       dplyr::mutate(!!cumprob_col := dplyr::sql(expr))
   }
   # Step 4: Add the probabilistic prediction using runif and cumprob_ columns
-  # Again here, use of SQL expressions. I used the help of generative AI so I don't fully understand that part, but it looks like it is working.
+  # Again here, use of SQL expressions.
 
   # Build case_when conditions as SQL snippets:
   case_when_sql <- paste0(
