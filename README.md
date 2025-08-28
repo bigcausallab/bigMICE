@@ -1,7 +1,5 @@
-<h1>
-  <img src="images/bigMicelogo.webp" alt="Logo" width="150" height="150">
-  bigMice : MICE for big data
-</h1>
+# bigMice <img src="man/figures/logo.webp" align="right" height="120" alt="" />
+
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/hugo-morvan/bigMice/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hugo-morvan/bigMice/actions/workflows/R-CMD-check.yaml)

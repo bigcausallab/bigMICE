@@ -40,7 +40,7 @@ create_predictor_matrix <- function(df, save_file=NULL){
 
   # save the matrix to an excel file
   if (save){
-    write.csv(as.data.frame(predictor_matrix), "predictor_matrix.csv")
+    utils::write.csv(as.data.frame(predictor_matrix), "predictor_matrix.csv")
   }
   return(predictor_matrix)
 }
@@ -59,7 +59,7 @@ create_predictor_matrix <- function(df, save_file=NULL){
 import_predictor_matrix <- function(file){
   # Utility function to import a predictor matrix from an csv file
   # takes a file path and returns the matrix as a matrix object
-  data <- read.csv(file, row.names = 1)
+  data <- utils::read.csv(file, row.names = 1)
   return(as.matrix(data))
 }
 

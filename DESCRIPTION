@@ -1,11 +1,10 @@
 Package: bigMice
 Type: Package
 Title: Adaptation of R package mice for big data using Apache Spark
-Version: 0.1.2
-Author: Hugo Morvan
-Maintainer: Hugo Morvan <hugmo418@student.liu.se>
-Description: Description to be added
-    Use four spaces when indenting paragraphs within the Description.
+Version: 1.0.0
+Author: Hugo Morvan <hugmo82@liu.se>
+Maintainer: Hugo Morvan <hugmo82@liu.se>
+Description: bigMice is an R package designed for handling missing values in large datasets with MICE using an efficient and scalable approach.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
