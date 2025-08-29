@@ -1,6 +1,6 @@
 Package: bigMICE
 Type: Package
-Title: Adaptation of R package mice for big data using Apache Spark
+Title: Adaptation the MICE algorithm for big data using Apache Spark
 Version: 1.0.0
 Author: Hugo Morvan <hugmo82@liu.se>
 Maintainer: Hugo Morvan <hugmo82@liu.se>
@@ -15,8 +15,8 @@ Imports:
     sparklyr,
     data.table,
     Matrix
-URL: https://github.com/hugo-morvan/bigMICE
-BugReports: https://github.com/hugo-morvan/bigMICE/issues
+URL: https://github.com/bigcausallab/bigMICE
+BugReports: https://github.com/bigcausallab/bigMICE/issues
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
