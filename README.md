@@ -2,7 +2,7 @@
 
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/hugo-morvan/bigMICE/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hugo-morvan/bigMICE/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/bigcausallab/bigMICE/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/bigcausallab/bigMICE/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 bigMICE is an R package based on the `sparklyr` library, designed for handling large datasets with multiple imputation using an efficient and scalable approach.
@@ -47,7 +47,7 @@ To install bigMICE from GitHub, use the following command in R:
 install.packages("devtools")
 
 # Install bigMICE from GitHub
-devtools::install_github("hugo-morvan/bigMICE")
+devtools::install_github("bigcausallab/bigMICE")
 ```
 
 Once installed, load the package:
@@ -70,7 +70,7 @@ conf <- spark_config()
 conf$`sparklyr.shell.driver-memory`<- "10G"
 conf$spark.memory.fraction <- 0.8
 conf$`sparklyr.cores.local` <- 4
-#conf$`spark.local.dir` <- "/local/data/hugo_spark_tmp/" # needed for checkpointing.
+#conf$`spark.local.dir` <- "/local/data/spark_tmp/" # needed for checkpointing.
 # If not possible, add the parameter checkpointing = FALSE to the mice.spark call
 
 sc = spark_connect(master = "local", config = conf)
