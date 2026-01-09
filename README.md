@@ -34,9 +34,20 @@ utils::packageVersion("sparklyr")
 
 
 ### Hadoop
-It is **strongly recommended** to also install Hadoop to have access to a HDFS (Hadoop Distributed File System) directory when using the package. This allows for checkpointing which extends the capabilities of the package. Here is an article on [how to install Hadoop on Windows](https://medium.com/analytics-vidhya/hadoop-on-windows-eb322f520168). [needs more resources].
+For robust execution of Spark on big data sets, checkpointing can be needed. To make it possible to enable checkpointing, Hadoop needs to be installed.
+
+**On Linux**:
+[https://hadoop.apache.org/docs/r1.2.1/single_node_setup.html]([https://hadoop.apache.org/docs/r1.2.1/single_node_setup.html)
+
+**On Windows**
+[https://gist.github.com/vorpal56/5e2b67b6be3a827b85ac82a63a5b3b2e]([https://hadoop.apache.org/docs/r1.2.1/single_node_setup.html)
+
+**Note** that specific Java versions are needed to run Spark: [https://spark.apache.org/docs/latest/](https://spark.apache.org/docs/latest/) (JDK 17/21 at the moment of writing)
+
+<!--It is **strongly recommended** to also install Hadoop to have access to a HDFS (Hadoop Distributed File System) directory when using the package. This allows for checkpointing which extends the capabilities of the package. Here is an article on [how to install Hadoop on Windows](https://medium.com/analytics-vidhya/hadoop-on-windows-eb322f520168). [needs more resources].
 
 If you do not have access to a HDFS directory, make sure to include the parameter checkpointing = FALSE when calling functions on the package.
+-->
 
 ## Installation
 
