@@ -11,14 +11,14 @@ bigMICE is an R package based on the `sparklyr` library, designed for handling l
 
 ### Spark and sparklyr
 
-(Optional) Setting up an environment (run once in a new R project) 
+This step is optional: you can set up an environment (run once in a new R project) 
 ```r
 install.packages("renv")
 library(renv)
 renv::init()
 ```
 
-Installing sparklyr and spark (run once). If not using the latest version of `sparklyr`, make sure to install a compatible Spark version, and vice versa. For the latest sparklyr release (1.9.1), the compatible Spark version is 4.0.0. For sparklyr versions < 1.9.0, you will need a spark version < 4.0.0.
+Install sparklyr and spark (run once) with the following commands. If not using the latest version of `sparklyr`, make sure to install a compatible Spark version, and vice versa. For the latest sparklyr release (1.9.1), the compatible Spark version is 4.0.0. For sparklyr versions < 1.9.0, you will need a spark version < 4.0.0.
 ```r
 install.packages("sparklyr") # version 1.9.1
 options(timeout = 6000)
@@ -51,7 +51,7 @@ If you do not have access to a HDFS directory, make sure to include the paramete
 
 ## Installation
 
-To install bigMICE from GitHub, use the following command in R:
+To install bigMICE from GitHub, use the following commands in R:
 
 ```r
 # Install devtools if not already installed
@@ -87,11 +87,11 @@ conf$`sparklyr.cores.local` <- 4
 sc = spark_connect(master = "local", config = conf)
 ```
 
-Loading the dataset (specific dataset used can be found in the `mice` R package [here](https://github.com/amices/mice/tree/master/data))
+Download the dataset boys.rda from the `mice` R package [here](https://github.com/amices/mice/tree/master/data)) and then save it in the current working R directory.
 ```r
 # Loading the data
-#data <- load("boys.rda")
-#write.csv(boys, "data.csv", row.names = FALSE)
+data <- load("boys.rda")
+write.csv(boys, "data.csv", row.names = FALSE)
 sdf <- spark_read_csv(sc, "data", "data.csv", header = TRUE, infer_schema = TRUE, null_value = "NA") %>%
   select(-all_of(c("hgt","wgt","bmi","hc")))
 # preparing the elements before running bigMICE
