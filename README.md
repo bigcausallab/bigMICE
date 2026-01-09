@@ -34,7 +34,7 @@ utils::packageVersion("sparklyr")
 
 
 ### Hadoop
-For robust execution of Spark on big data sets, checkpointing can be needed. To make it possible to enable checkpointing, Hadoop needs to be installed.
+For robust execution of Spark on big data sets, checkpointing can be needed. To make it possible to enable checkpointing, Hadoop needs to be installed. For smaller datasets or for running toy examples Hadoop installation can be skipped.
 
 **On Linux**
 [https://hadoop.apache.org/docs/r1.2.1/single_node_setup.html](https://hadoop.apache.org/docs/r1.2.1/single_node_setup.html)
