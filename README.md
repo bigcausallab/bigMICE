@@ -40,7 +40,7 @@ For robust execution of Spark on big data sets, checkpointing can be needed. To 
 [https://hadoop.apache.org/docs/r1.2.1/single_node_setup.html](https://hadoop.apache.org/docs/r1.2.1/single_node_setup.html)
 
 **On Windows**
-[https://gist.github.com/vorpal56/5e2b67b6be3a827b85ac82a63a5b3b2e](https://hadoop.apache.org/docs/r1.2.1/single_node_setup.html)
+[https://gist.github.com/vorpal56/5e2b67b6be3a827b85ac82a63a5b3b2e](https://gist.github.com/vorpal56/5e2b67b6be3a827b85ac82a63a5b3b2e)
 
 **Note** that specific Java versions are needed to run Spark: [https://spark.apache.org/docs/latest/](https://spark.apache.org/docs/latest/) (JDK 17/21 at the moment of writing)
 
