@@ -87,7 +87,7 @@ conf$`sparklyr.cores.local` <- 4
 sc = spark_connect(master = "local", config = conf)
 ```
 
-Download the dataset boys.rda from the `mice` R package [here](https://github.com/amices/mice/tree/master/data)) and then save it in the current working R directory.
+Download the dataset boys.rda from the `mice` R package [here](https://github.com/amices/mice/tree/master/data) and then save it in the current working R directory.
 ```r
 # Loading the data
 data <- load("boys.rda")
