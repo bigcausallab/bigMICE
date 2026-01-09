@@ -42,7 +42,7 @@ For robust execution of Spark on big data sets, checkpointing can be needed. To 
 **On Windows**
 [https://gist.github.com/vorpal56/5e2b67b6be3a827b85ac82a63a5b3b2e](https://gist.github.com/vorpal56/5e2b67b6be3a827b85ac82a63a5b3b2e)
 
-**Note** that specific Java versions are needed to run Spark: [https://spark.apache.org/docs/latest/](https://spark.apache.org/docs/latest/) (JDK 17/21 at the moment of writing)
+**Note** that specific Java versions are needed to run Spark: [https://spark.apache.org/docs/latest/](https://spark.apache.org/docs/latest/) (JDK 17 or JDK 21 at the moment of writing)
 
 <!--It is **strongly recommended** to also install Hadoop to have access to a HDFS (Hadoop Distributed File System) directory when using the package. This allows for checkpointing which extends the capabilities of the package. Here is an article on [how to install Hadoop on Windows](https://medium.com/analytics-vidhya/hadoop-on-windows-eb322f520168). [needs more resources].
 
