@@ -104,7 +104,7 @@ variable_types <- c(age = "Continuous_float",
 analysis_formula <- as.formula("phb ~ age + gen + tv + reg")
 
 ```
-Calling the mice.spark function to obtain m=1 imputed dataset:
+Call the mice.spark function to obtain m=1 imputed dataset:
 ```r
 imputation_results <- bigMICE::mice.spark(data = sdf,
                                             sc = sc,
