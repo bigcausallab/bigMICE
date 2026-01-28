@@ -115,10 +115,6 @@ imputation_results <- bigMICE::mice.spark(data = sdf,
                                          maxit = 2,
                                  checkpointing = FALSE)
 
-imputation_results$rubin_stats
-
-imputation_results$model_params
-
-imputation_results$imputation_stats
+print(imputation_results)
 ```
 
